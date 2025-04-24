@@ -41,6 +41,23 @@ public class BusBookingService {
             .filter(booking -> booking.getSchedule().getId().equals(scheduleId))
             .collect(Collectors.toList());
     }
+    public List<BusBooking> getBookingsByDate(Date date) {
+        return busBookingRepository.findAll().stream()
+            .filter(booking -> booking.getBookingDate().equals(date))
+            .collect(Collectors.toList());
+    }
+
+
+    public List<BusBooking> getBookingsByDateRange(Date startDate, Date endDate) {
+        return busBookingRepository.findAll().stream()
+            .filter(booking -> booking.getBookingDate().after(startDate) && booking.getBookingDate().before(endDate))
+            .collect(Collectors.toList());
+    }
+    public List<BusBooking> getActiveBookings(Long userId,String status) {
+        return busBookingRepository.findAll().stream()
+            .filter(booking -> booking.getUser().getId().equals(userId) && booking.getStatus().equalsIgnoreCase(status))
+            .collect(Collectors.toList());
+    }
     
     @Transactional
     public BusBooking createBooking(BusBooking booking) {

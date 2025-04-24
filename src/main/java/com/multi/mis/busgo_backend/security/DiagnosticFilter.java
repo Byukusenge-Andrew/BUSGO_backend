@@ -25,7 +25,7 @@ public class DiagnosticFilter extends OncePerRequestFilter {
 
         String path = request.getServletPath();
         String method = request.getMethod();
-
+        logger.info("Origin header: {}", request.getHeader("Origin"));
         logger.info("Request received: {} {}", method, path);
         logger.info("Headers:");
         request.getHeaderNames().asIterator().forEachRemaining(headerName ->

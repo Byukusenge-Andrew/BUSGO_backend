@@ -12,7 +12,6 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/locations")
-@CrossOrigin(origins = "*")
 public class BusLocationController {
 
     @Autowired
