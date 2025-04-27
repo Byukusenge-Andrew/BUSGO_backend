@@ -38,6 +38,8 @@ public class AuthController {
     @Autowired
     private UserService userService;
 
+
+
     @Autowired
     private BusCompanyService busCompanyService;
 
@@ -113,65 +115,60 @@ public class AuthController {
     }
 
 
+
     @PostMapping("/company/login")
     public ResponseEntity<?> companyLogin(@RequestBody LoginRequest loginRequest) {
         try {
+            // Check if email is null or empty
+            if (loginRequest.getEmail() == null || loginRequest.getEmail().isEmpty()) {
+                logger.warning("Company login attempt with null or empty email");
+                return ResponseEntity.badRequest().body("Email is required");
+            }
+
+            if (loginRequest.getPassword() == null || loginRequest.getPassword().isEmpty()) {
+                logger.warning("Company login attempt with null or empty password");
+                return ResponseEntity.badRequest().body("Password is required");
+            }
+
             logger.info("Company login attempt for email: " + loginRequest.getEmail());
 
-            // 1. Find the company by email
-            UserDetails userDetails = null;
-            try {
-                userDetails = userService.loadUserByUsername(loginRequest.getEmail());
-                logger.info("Company found: " + userDetails.getUsername());
-            } catch (UsernameNotFoundException e) {
+            // Find the company by email
+            BusCompany company = busCompanyService.findByContactEmail(loginRequest.getEmail());
+
+            if (company == null) {
                 logger.warning("Company not found with email: " + loginRequest.getEmail());
                 return ResponseEntity.badRequest().body("Company not found");
             }
 
-            // 2. Check password manually
-            if (userDetails == null) {
-                logger.warning("UserDetails is null after loadUserByUsername");
-                return ResponseEntity.badRequest().body("Company not found");
-            }
+            logger.info("Company found: " + company.getCompanyName());
 
-            // 3. Use passwordEncoder to verify the password
-            logger.info("Verifying password for company: " + userDetails.getUsername());
-            boolean passwordMatches = passwordEncoder.matches(loginRequest.getPassword(), userDetails.getPassword());
+            // Verify password
+            boolean passwordMatches = passwordEncoder.matches(loginRequest.getPassword(), company.getPassword());
+            // If company passwords are stored in plain text, use this instead:
+            // boolean passwordMatches = loginRequest.getPassword().equals(company.getPassword());
+
             logger.info("Password match result: " + passwordMatches);
 
             if (!passwordMatches) {
-                logger.warning("Password verification failed for company: " + userDetails.getUsername());
-
-                // TEMPORARY DEBUG CODE - REMOVE IN PRODUCTION
-                if (loginRequest.getPassword().equals("debug_override_123!")) {
-                    logger.warning("DEBUG MODE: Allowing login with debug override password");
-                    passwordMatches = true;
-                } else {
-                    throw new BadCredentialsException("Invalid password");
-                }
+                logger.warning("Password verification failed for company: " + company.getCompanyName());
+                return ResponseEntity.badRequest().body("Invalid password");
             }
 
-            logger.info("Password verified successfully for company: " + userDetails.getUsername());
+            // Generate JWT token
+            final String jwt = jwtUtil.generateTokenForCompany(company);
+            logger.info("JWT token generated for company: " + company.getCompanyName());
 
-            // 4. If we get here, authentication was successful
-            final String jwt = jwtUtil.generateToken(userDetails);
-            logger.info("JWT token generated for company: " + userDetails.getUsername());
+            // Return success response with token
+            Map<String, Object> response = Map.of(
+                    "token", jwt,
+                    "role", "COMPANY",
+                    "company", company
+            );
 
-            // 5. Get the full user object to include in the response
-            User user = userService.findByEmail(loginRequest.getEmail());
+            return ResponseEntity.ok(response);
 
-            return ResponseEntity.ok(new LoginResponse(jwt, "COMPANY", user));
-        } catch (DisabledException e) {
-            logger.warning("Company is disabled: " + e.getMessage());
-            return ResponseEntity.badRequest().body("Company is disabled");
-        } catch (BadCredentialsException e) {
-            logger.warning("Bad credentials: " + e.getMessage());
-            return ResponseEntity.badRequest().body("Invalid email or password");
-        } catch (UsernameNotFoundException e) {
-            logger.warning("Company not found: " + e.getMessage());
-            return ResponseEntity.badRequest().body("Company not found");
         } catch (Exception e) {
-            logger.severe("Authentication error: " + e.getMessage());
+            logger.severe("Company authentication error: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.badRequest().body("Authentication error: " + e.getMessage());
         }

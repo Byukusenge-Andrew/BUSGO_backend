@@ -27,6 +27,7 @@ public class SecurityConfig {
                                 "/api/auth/admin/login",
                                 "/api/auth/reset-password",
                                 "/api/test/public",
+                                "/api/companies/login",
                                 "/error" // Add /error to permitAll
                         ).permitAll()
                         .anyRequest().authenticated()

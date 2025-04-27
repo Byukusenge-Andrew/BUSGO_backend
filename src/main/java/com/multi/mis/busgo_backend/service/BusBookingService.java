@@ -29,7 +29,16 @@ public class BusBookingService {
     public Optional<BusBooking> getBookingById(Long id) {
         return busBookingRepository.findById(id);
     }
-    
+
+
+    public int CountBusBookingsByUserId(Long userId) {
+        List<BusBooking> userBookings = getBookingsByUser(userId);
+
+        // Return the count of bookings
+        return userBookings.size();
+    }
+
+
     public List<BusBooking> getBookingsByUser(Long userId) {
         return busBookingRepository.findAll().stream()
             .filter(booking -> booking.getUser().getId().equals(userId))

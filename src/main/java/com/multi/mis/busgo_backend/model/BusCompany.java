@@ -21,7 +21,7 @@ public class BusCompany {
     private String contactEmail;
     private String contactPhone;
     private String address;
-    private String licenseNumber;
+    private String licenseNumber ;
     private String password;
     private Date registrationDate;
     private boolean active;

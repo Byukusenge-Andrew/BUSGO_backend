@@ -1,6 +1,8 @@
 package com.multi.mis.busgo_backend.controller;
 
+import com.multi.mis.busgo_backend.model.BusBooking;
 import com.multi.mis.busgo_backend.model.User;
+import com.multi.mis.busgo_backend.service.BusBookingService;
 import com.multi.mis.busgo_backend.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -13,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.security.authentication.BadCredentialsException;
 
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -22,7 +25,8 @@ import java.util.Optional;
 public class UserController {
     @Autowired
     private AuthenticationManager authenticationManager;
-
+    @Autowired
+    private BusBookingService bookingService;
 
     @Autowired
     private UserService userService;
@@ -43,6 +47,57 @@ public class UserController {
     }
 
 
+
+
+    /**
+     * Get user statistics by user ID
+     * Returns statistics that match the frontend interface:
+     * - activeBookings: number of current active bookings
+     * - totalBookings: total number of bookings made by the user
+     * - rewardsPoints: user's reward points
+     *
+     * @param userId The ID of the user to retrieve stats for
+     * @return User statistics or 404 if user not found
+     */
+    @GetMapping("/{userId}/stats")
+    public ResponseEntity<?> getUserStats(@PathVariable Long userId) {
+        Optional<User> userOptional = userService.getUserById(userId);
+
+        if (userOptional.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        User user = userOptional.get();
+
+        // Get booking statistics for the user
+        // These methods would need to be implemented in your BookingService
+        List<BusBooking> gotactiveBookings = bookingService.getActiveBookings(userId,"active");
+        int activeBookings = gotactiveBookings.size();
+        int totalBookings = bookingService.CountBusBookingsByUserId(userId);
+
+        // This could be stored in the user object or calculated based on booking history
+        // For now, we'll use a placeholder value
+        int rewardsPoints = calculateRewardsPoints(userId);
+
+        // Create a map of user statistics matching the frontend interface
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("activeBookings", activeBookings);
+        stats.put("totalBookings", totalBookings);
+        stats.put("rewardsPoints", rewardsPoints);
+
+        return ResponseEntity.ok(stats);
+    }
+
+    /**
+     * Calculate rewards points for a user based on their booking history
+     * This is a placeholder implementation - you'll need to implement your own logic
+     */
+    private int calculateRewardsPoints(Long userId) {
+        // Placeholder implementation
+        // In a real application, this would calculate points based on booking history,
+        // user activity, or retrieve from a dedicated rewards service
+        return 100; // Default value for demonstration
+    }
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> credentials) {
         String username = credentials.get("username");

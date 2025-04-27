@@ -5,16 +5,7 @@ import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.multi.mis.busgo_backend.model.BusCompany;
 import com.multi.mis.busgo_backend.service.BusCompanyService;
@@ -65,7 +56,22 @@ public class BusCompanyController {
             );
         }
     }
-    
+
+    @PatchMapping("/{companyId}/status")
+    public ResponseEntity<?> changeCompanyStatus(@PathVariable Long companyId, @RequestBody Map<String, Boolean> statusUpdate) {
+        Boolean active = statusUpdate.get("active");
+        if (active == null) {
+            return ResponseEntity.badRequest().body(
+                    Map.of("message", "Active status is required")
+            );
+        }
+
+        return busCompanyService.updateCompanyStatus(companyId, active)
+                .map(updatedCompany -> ResponseEntity.ok(updatedCompany))
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+
     @PostMapping("/login")
     public ResponseEntity<Map<String, String>> login(@RequestBody BusCompany company) {
         return busCompanyService.login(company.getCompanyName(), company.getPassword())

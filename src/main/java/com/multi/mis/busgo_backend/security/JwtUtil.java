@@ -1,5 +1,6 @@
 package com.multi.mis.busgo_backend.security;
 
+import com.multi.mis.busgo_backend.model.BusCompany;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -74,6 +75,19 @@ public class JwtUtil {
         Map<String, Object> claims = new HashMap<>();
         claims.put("role", "COMPANY"); // Default role for email-based tokens
         return createToken(claims, email);
+    }
+    /**
+     * Generate a JWT token for a bus company
+     *
+     * @param company The bus company to generate a token for
+     * @return The JWT token
+     */
+    public String generateTokenForCompany(BusCompany company) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("role", "COMPANY");
+        claims.put("companyId", company.getCompanyId());
+        claims.put("companyName", company.getCompanyName());
+        return createToken(claims, company.getContactEmail());
     }
 
     // Overloaded method to generate token with specific role
