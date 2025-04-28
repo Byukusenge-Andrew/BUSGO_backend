@@ -1,5 +1,10 @@
 package com.multi.mis.busgo_backend.security;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+
+import com.multi.mis.busgo_backend.service.BusCompanyService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,16 +20,13 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
     private final JwtUtil jwtUtil;
     private final UserDetailsService userDetailsService;
+    private final BusCompanyService busCompanyService;
 
     private static final List<String> PUBLIC_ENDPOINTS = Arrays.asList(
             "/api/auth/register",
@@ -37,9 +39,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             "/error"
     );
 
-    public JwtAuthenticationFilter(JwtUtil jwtUtil, @Qualifier("userService") UserDetailsService userDetailsService) {
+    public JwtAuthenticationFilter(
+            JwtUtil jwtUtil,
+            @Qualifier("userService") UserDetailsService userDetailsService,
+            BusCompanyService busCompanyService) {
         this.jwtUtil = jwtUtil;
         this.userDetailsService = userDetailsService;
+        this.busCompanyService = busCompanyService;
     }
 
     @Override
@@ -62,14 +68,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String email = null;
         String jwt = null;
+        String role = null;
 
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             jwt = authorizationHeader.substring(7);
             try {
                 email = jwtUtil.extractUsername(jwt);
-                logger.debug("Email: " + email);
+                role = jwtUtil.extractRole(jwt);
+                logger.debug("Email: " + email + ", Role: " + role);
             } catch (Exception e) {
-                logger.error("Error extracting username from token: " + e.getMessage());
+                logger.error("Error extracting information from token: " + e.getMessage());
             }
         } else {
             logger.debug("No Authorization header or invalid format for path: " + path);
@@ -77,18 +85,28 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             try {
-                UserDetails userDetails = this.userDetailsService.loadUserByUsername(email);
+                UserDetails userDetails;
+
+                // Choose the appropriate service based on the role in the token
+                if (role != null && role.equals("COMPANY")) {
+                    logger.debug("Loading company details for: " + email);
+                    userDetails = busCompanyService.loadUserByUsername(email);
+                } else {
+                    logger.debug("Loading user details for: " + email);
+                    userDetails = userDetailsService.loadUserByUsername(email);
+                }
+
                 if (jwtUtil.validateToken(jwt, userDetails)) {
                     UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
                             userDetails, null, userDetails.getAuthorities());
                     authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authenticationToken);
-                    logger.debug("Authenticated user: " + email + " for path: " + path);
+                    logger.debug("Authenticated entity: " + email + " with role: " + role + " for path: " + path);
                 } else {
-                    logger.warn("Invalid JWT token for user: " + email);
+                    logger.warn("Invalid JWT token for: " + email);
                 }
             } catch (Exception e) {
-                logger.error("Error authenticating user: " + e.getMessage());
+                logger.error("Error authenticating: " + e.getMessage());
             }
         }
 

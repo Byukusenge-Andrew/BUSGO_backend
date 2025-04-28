@@ -69,6 +69,14 @@ public class BusService {
                     return busRepository.save(bus);
                 });
     }
+    /**
+     * Get bus by type
+     */
+
+    public List<Bus> findbyBustype(String bustype) {
+        return busRepository.findBusByBusType(bustype);
+
+    }
 
     /**
      * Delete a bus

@@ -20,8 +20,11 @@ public class Bus {
     private String registrationNumber;
     private String model;
     private Integer capacity;
+    private String busType;
     private String companyId;
     private String status; // ACTIVE, MAINTENANCE, INACTIVE
+    private String notes;
+
     
     @ElementCollection
     private List<String> features;
@@ -36,6 +39,23 @@ public class Bus {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public String getNotes() {
+        return notes;
+    }
+
+
+    public void setNotes(String notes) {
+        this.notes = notes;
+    }
+
+    public String getType() {
+        return busType;
+    }
+
+    public void setType(String type) {
+        this.busType = type;
     }
 
     public String getRegistrationNumber() {
@@ -85,6 +105,8 @@ public class Bus {
     public void setFeatures(List<String> features) {
         this.features = features;
     }
+
+
 
     public Date getCreatedAt() {
         return createdAt;

@@ -7,6 +7,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -22,6 +23,7 @@ import com.multi.mis.busgo_backend.security.JwtUtil;
 import com.multi.mis.busgo_backend.service.BusCompanyService;
 import com.multi.mis.busgo_backend.service.UserService;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.logging.Logger;
 
@@ -299,7 +301,14 @@ public class AuthController {
             System.out.println("User registered: " + savedUser.getUsername());
 
             // Generate JWT token for the newly registered user
-            final String jwt = jwtUtil.generateToken(savedUser.getUsername());
+            // Create UserDetails from the saved user
+            UserDetails userDetails = new org.springframework.security.core.userdetails.User(
+                    savedUser.getEmail(),
+                    savedUser.getPassword(),
+                    Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + savedUser.getRole()))
+            );
+
+            final String jwt = jwtUtil.generateToken(userDetails);
 
             // Return the same response format as login
             return ResponseEntity.ok(new LoginResponse(jwt, savedUser.getRole(), savedUser));
