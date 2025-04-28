@@ -35,4 +35,10 @@ public interface BusScheduleRepository extends JpaRepository<BusSchedule, Long> 
             @Param("sourceCity") String sourceCity,
             @Param("destCity") String destCity,
             @Param("departureDate") Date departureDate);
+
+    List<BusSchedule> findBySourceLocationLocationIdAndDestinationLocationLocationIdAndDepartureTime(
+            Long sourceId, Long destId, Date departureDate);
+
+    List<BusSchedule> findBySourceLocationCityAndDestinationLocationCityAndDepartureTime(
+            String sourceCity, String destCity, Date departureDate);
 } 

@@ -9,4 +9,4 @@ import java.util.Optional;
 @Repository
 public interface LocationAddressRepository extends JpaRepository<LocationAddress, Long> {
     Optional<LocationAddress> findByLocationLocationId(Long locationId);
-} 
+}
