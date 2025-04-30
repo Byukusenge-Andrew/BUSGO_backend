@@ -14,7 +14,7 @@ public interface BusScheduleRepository extends JpaRepository<BusSchedule, Long> 
     List<BusSchedule> findBySourceLocationLocationIdAndDestinationLocationLocationIdAndDepartureTimeGreaterThanEqual(
             Long sourceLocationId, Long destinationLocationId, Date departureTime);
     
-    List<BusSchedule> findByCompanyCompanyId(Long companyId);
+    List<BusSchedule> findByCompanyId(Long companyId);
     
     List<BusSchedule> findByActive(boolean active);
     

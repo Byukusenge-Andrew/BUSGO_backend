@@ -163,6 +163,11 @@ public class BusScheduleController {
         return ResponseEntity.ok(busScheduleService.searchBus(sourceId, destId, departureDate));
     }
 
+    @GetMapping("/company/{companyId}")
+    public ResponseEntity<List<BusSchedule>> getBusScheduleByCompany(@PathVariable Long companyId ) {
+        return ResponseEntity.ok(busScheduleService.getBusScheduleByCompany(companyId));
+    }
+
     @GetMapping("/search-by-city")
     public ResponseEntity<List<BusSchedule>> searchBusByCity(
             @RequestParam String sourceCity,

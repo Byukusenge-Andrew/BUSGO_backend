@@ -2,7 +2,6 @@ package com.multi.mis.busgo_backend.model;
 
 import java.util.Date;
 import java.util.List;
-
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -25,10 +24,9 @@ public class Bus {
     private String status; // ACTIVE, MAINTENANCE, INACTIVE
     private String notes;
 
-    
     @ElementCollection
     private List<String> features;
-    
+
     @Temporal(TemporalType.TIMESTAMP)
     private Date createdAt;
 
@@ -45,11 +43,21 @@ public class Bus {
         return notes;
     }
 
-
     public void setNotes(String notes) {
         this.notes = notes;
     }
 
+    // Fixed getter for busType
+    public String getBusType() {
+        return busType;
+    }
+
+    // Fixed setter for busType
+    public void setBusType(String busType) {
+        this.busType = busType;
+    }
+
+    // Keep the old methods for backward compatibility
     public String getType() {
         return busType;
     }
@@ -105,8 +113,6 @@ public class Bus {
     public void setFeatures(List<String> features) {
         this.features = features;
     }
-
-
 
     public Date getCreatedAt() {
         return createdAt;

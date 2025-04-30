@@ -171,4 +171,8 @@ public class BusScheduleService {
         return busScheduleRepository.findBySourceLocationCityAndDestinationLocationCityAndDepartureTime(
                 sourceCity, destCity, departureDate);
     }
+
+    public List<BusSchedule> getBusScheduleByCompany(Long companyId) {
+        return busScheduleRepository.findByCompanyId(companyId);
+    }
 }
