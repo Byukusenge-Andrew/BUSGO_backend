@@ -125,4 +125,16 @@ public class UserService implements UserDetailsService {
         logger.info("Getting active users");
         return userRepository.findByIsActiveTrue();
     }
+    /**
+     * Finds a user by their ID
+     * @param id The ID of the user to find
+     * @return The user if found, null otherwise
+     */
+    public User findById(Long id) {
+        if (id == null) {
+            return null;
+        }
+        Optional<User> user = userRepository.findById(id);
+        return user.orElse(null);
+    }
 }

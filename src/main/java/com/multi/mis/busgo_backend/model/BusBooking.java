@@ -103,6 +103,15 @@ public class BusBooking {
         return numberOfSeats;
     }
 
+    public BusCompany getCompany() {
+        return this.schedule.getCompany();
+    }
+
+
+    public Long GetCompanyId() {
+        return this.schedule.getCompany().getId();
+    }
+
     public void setNumberOfSeats(Integer numberOfSeats) {
         this.numberOfSeats = numberOfSeats;
     }

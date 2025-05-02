@@ -1,9 +1,6 @@
 package com.multi.mis.busgo_backend.service;
 
-import com.multi.mis.busgo_backend.model.BusCompany;
-import com.multi.mis.busgo_backend.model.BusLocation;
 import com.multi.mis.busgo_backend.model.BusSchedule;
-import com.multi.mis.busgo_backend.model.Route;
 import com.multi.mis.busgo_backend.repository.BusCompanyRepository;
 import com.multi.mis.busgo_backend.repository.BusLocationRepository;
 import com.multi.mis.busgo_backend.repository.BusScheduleRepository;

@@ -4,6 +4,7 @@ import com.multi.mis.busgo_backend.model.BusBooking;
 import com.multi.mis.busgo_backend.model.User;
 import com.multi.mis.busgo_backend.service.BusBookingService;
 import com.multi.mis.busgo_backend.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +12,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.authentication.BadCredentialsException;
 
@@ -30,12 +32,46 @@ public class UserController {
 
     @Autowired
     private UserService userService;
-    
+    @Autowired
+    private BusBookingService busBookingService;
+
     @GetMapping
     public ResponseEntity<List<User>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
     }
-    
+
+    @GetMapping("/me")
+    public ResponseEntity<?> getMe() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated() || authentication.getPrincipal().equals("anonymousUser")) {
+            // Return unauthorized if no user is authenticated or if the principal is the anonymous user
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authenticated");
+        }
+
+        Object principal = authentication.getPrincipal();
+
+        if (principal instanceof UserDetails) {
+            // If the principal is UserDetails (which our User class implements)
+            // We might need to fetch the full User entity if UserDetails doesn't contain all fields
+            String username = ((UserDetails) principal).getUsername();
+            Optional<User> userOpt = Optional.ofNullable(userService.findByUsername(username));
+            return userOpt.<ResponseEntity<?>>map(ResponseEntity::ok)
+                    .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body("Authenticated user details not found"));
+
+        } else if (principal instanceof String) {
+            // If the principal is just the username string (less common with UserDetails setup)
+            String username = (String) principal;
+            Optional<User> userOpt = Optional.ofNullable(userService.findByUsername(username));
+            return userOpt.<ResponseEntity<?>>map(ResponseEntity::ok)
+                    .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body("User details not found for username: " + username));
+        } else {
+            // Handle unexpected principal type
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unexpected principal type: " + principal.getClass().getName());
+        }
+    }
+
+
     @GetMapping("/by-role")
     public ResponseEntity<List<User>> getUsersByRole(@RequestParam String role) {
         return ResponseEntity.ok(userService.getUsersByRole(role));
@@ -71,7 +107,7 @@ public class UserController {
 
         // Get booking statistics for the user
         // These methods would need to be implemented in your BookingService
-        List<BusBooking> gotactiveBookings = bookingService.getActiveBookings(userId,"active");
+        List<BusBooking> gotactiveBookings = bookingService.getActiveBookings(userId,"CONFIRMED");
         int activeBookings = gotactiveBookings.size();
         int totalBookings = bookingService.CountBusBookingsByUserId(userId);
 
@@ -96,7 +132,11 @@ public class UserController {
         // Placeholder implementation
         // In a real application, this would calculate points based on booking history,
         // user activity, or retrieve from a dedicated rewards service
-        return 100; // Default value for demonstration
+        List<BusBooking> bookings = busBookingService.getBookingsByUser(userId);
+        int totalBookings = bookings.size();
+        int rewardsPoints = totalBookings * 10; // Example calculation: 10 points per booking
+        return rewardsPoints;
+         // Default value for demonstration
     }
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> credentials) {

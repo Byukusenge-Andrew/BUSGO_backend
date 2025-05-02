@@ -18,6 +18,8 @@ public class BusBookingService {
     
     @Autowired
     private BusBookingRepository busBookingRepository;
+
+
     
     @Autowired
     private BusScheduleRepository busScheduleRepository;
@@ -37,6 +39,11 @@ public class BusBookingService {
         // Return the count of bookings
         return userBookings.size();
     }
+
+    public List<BusBooking> getBookingByCompany(Long companyId) {
+        return busBookingRepository.findByCompany_CompanyId(companyId);
+    }
+
 
 
     public List<BusBooking> getBookingsByUser(Long userId) {
@@ -123,11 +130,44 @@ public class BusBookingService {
             })
             .collect(Collectors.toList());
     }
-    
+
+    /**
+     * Updates an existing booking with the provided data
+     * @param id The ID of the booking to update
+     * @param booking The booking data with updated fields
+     * @return The updated booking
+     */
+    @Transactional
     public BusBooking updateBooking(Long id, BusBooking booking) {
+        // Ensure the ID is set correctly
         booking.setId(id);
-        return busBookingRepository.save(booking);
+
+        // Get the existing booking to ensure we're working with a managed entity
+        Optional<BusBooking> existingBookingOpt = busBookingRepository.findById(id);
+        if (existingBookingOpt.isEmpty()) {
+            return null;
+        }
+
+        BusBooking existingBooking = existingBookingOpt.get();
+
+        // Update only the fields that should be updated, keeping the existing relationships
+        existingBooking.setStatus(booking.getStatus());
+        existingBooking.setNumberOfSeats(booking.getNumberOfSeats());
+        existingBooking.setTotalFare(booking.getTotalFare());
+        existingBooking.setSeatNumbers(booking.getSeatNumbers());
+        existingBooking.setPaymentMethod(booking.getPaymentMethod());
+        existingBooking.setPaymentStatus(booking.getPaymentStatus());
+        existingBooking.setTransactionId(booking.getTransactionId());
+
+        // If booking date is provided, update it
+        if (booking.getBookingDate() != null) {
+            existingBooking.setBookingDate(booking.getBookingDate());
+        }
+
+        // Save the updated booking
+        return busBookingRepository.save(existingBooking);
     }
+
     
     public List<BusBooking> getBookingsByStatus(String status) {
         return busBookingRepository.findAll().stream()

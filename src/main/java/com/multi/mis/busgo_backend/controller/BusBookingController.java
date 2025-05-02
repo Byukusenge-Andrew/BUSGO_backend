@@ -1,22 +1,24 @@
+
 package com.multi.mis.busgo_backend.controller;
 
-import com.multi.mis.busgo_backend.model.*;
-import com.multi.mis.busgo_backend.service.*;
+import com.multi.mis.busgo_backend.model.BusBooking;
+import com.multi.mis.busgo_backend.model.BusSchedule;
+import com.multi.mis.busgo_backend.model.User;
+import com.multi.mis.busgo_backend.service.BusBookingService;
+import com.multi.mis.busgo_backend.service.BusScheduleService;
+import com.multi.mis.busgo_backend.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.logging.Logger;
 
 @RestController
 @RequestMapping("/api/BusBooking")
@@ -27,457 +29,350 @@ public class BusBookingController {
     private BusBookingService busBookingService;
 
     @Autowired
-    private UserService userService;
+    private UserService userservice;
 
     @Autowired
-    private AuthenticationManager authenticationManager;
+    private BusScheduleService busScheduleservice;
 
-    @Autowired
-    private BusCompanyService busCompanyService;
+    private static final Logger logger = Logger.getLogger(BusBookingController.class.getName());
 
-    @Autowired
-    private BusLocationService busLocationService;
-
-    @Autowired
-    private BusScheduleService busScheduleService;
-
-    @Autowired
-    private RouteService routeService;
-
-    @Autowired
-    private RouteStopService routeStopService;
-
-    @Autowired
-    private PaymentService paymentService;
-
-    // User endpoints
-    @GetMapping("/GetAllUsers")
-    public ResponseEntity<List<User>> getAllUsers() {
-        return ResponseEntity.ok(userService.getAllUsers());
+    @GetMapping("/company/{companyId}")
+    public ResponseEntity<List<BusBooking>> getBusBookingByCompanyId( @PathVariable Long companyId) {
+//        List<BusBooking> bookings = busBookingService.getBookingByCompany(companyId);
+//        return new ResponseEntity<>(bookings, HttpStatus.OK);
+        return ResponseEntity.ok(busBookingService.getBookingByCompany(companyId));
     }
 
-    @GetMapping("/GetUsersByRole")
-    public ResponseEntity<List<User>> getUsersByRole(@RequestParam String role) {
-        return ResponseEntity.ok(userService.getUsersByRole(role));
-    }
-
-    @GetMapping("/GetActiveUsers")
-    public ResponseEntity<List<User>> getActiveUsers() {
-        return ResponseEntity.ok(userService.getActiveUsers());
-    }
-
-    @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody Map<String, String> credentials) {
-        String username = credentials.get("username");
-        String password = credentials.get("password");
-
-        try {
-            // Use Spring Security's authentication manager instead of direct login
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(username, password)
-            );
-
-            // If authentication is successful, set the authentication in the security context
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-
-            // Find the user by username
-            User user = userService.findByUsername(username);
-            if (user != null) {
-                return ResponseEntity.ok(user);
-            } else {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not found");
-            }
-        } catch (BadCredentialsException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials");
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Authentication error: " + e.getMessage());
-        }
-    }
-
-    @PostMapping("/AddNewUser")
-    public ResponseEntity<User> addNewUser(@RequestBody User user) {
-        return ResponseEntity.ok(userService.createUser(user));
-    }
-
-    @PostMapping("/UpdateUser")
-    public ResponseEntity<?> updateUser(@RequestParam Long userId, @RequestBody User user) {
-        User updatedUser = userService.updateUser(userId, user);
-        return updatedUser != null
-                ? ResponseEntity.ok(updatedUser)
-                : ResponseEntity.notFound().build();
-    }
-
-    @DeleteMapping("/DeleteUserByUserId")
-    public ResponseEntity<?> deleteUser(@RequestParam Long userId) {
-        boolean deleted = userService.deleteUser(userId);
-
-        if (deleted) {
-            return ResponseEntity.ok("User deleted successfully");
-        } else {
-            return ResponseEntity.notFound().build();
-        }
-    }
-
-    // Company endpoints
-    @PostMapping("/CreateCompany")
-    public ResponseEntity<BusCompany> createCompany(@RequestBody BusCompany company) {
-        return ResponseEntity.ok(busCompanyService.createCompany(company));
-    }
-
-    @GetMapping("/GetBusCompanies")
-    public ResponseEntity<List<BusCompany>> getBusCompanies() {
-        return ResponseEntity.ok(busCompanyService.getAllCompanies());
-    }
-
-    @GetMapping("/GetBusCompanyById")
-    public ResponseEntity<?> getBusCompanyById(@RequestParam Long companyId) {
-        return busCompanyService.getCompanyById(companyId)
-                .map(company -> ResponseEntity.ok(company))
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @PutMapping("/PutBusCompany")
-    public ResponseEntity<?> updateCompany(@RequestParam Long companyId, @RequestBody BusCompany company) {
-        return busCompanyService.updateCompany(companyId, company)
-                .map(updatedCompany -> ResponseEntity.ok(updatedCompany))
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @PostMapping("/PostBusCompany")
-    public ResponseEntity<BusCompany> postBusCompany(@RequestBody BusCompany company) {
-        return ResponseEntity.ok(busCompanyService.createCompany(company));
-    }
-
-    @DeleteMapping("/DeleteBusCompany")
-    public ResponseEntity<?> deleteBusCompany(@RequestParam Long companyId) {
-        boolean deleted = busCompanyService.deleteCompany(companyId);
-
-        if (deleted) {
-            return ResponseEntity.ok("Company deleted successfully");
-        } else {
-            return ResponseEntity.notFound().build();
-        }
-    }
-
-    // Location endpoints
-    @GetMapping("/GetBusLocations")
-    public ResponseEntity<List<BusLocation>> getBusLocations() {
-        return ResponseEntity.ok(busLocationService.getAllLocations());
-    }
-
-    @GetMapping("/GetBusLocationById")
-    public ResponseEntity<?> getBusLocationById(@RequestParam Long locationId) {
-        return busLocationService.getLocationById(locationId)
-                .map(location -> ResponseEntity.ok(location))
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @GetMapping("/getAddressByLocationId")
-    public ResponseEntity<?> getAddressByLocationId(@RequestParam Long locationId) {
-        return busLocationService.getAddressByLocationId(locationId)
-                .map(address -> ResponseEntity.ok(address))
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @PostMapping("/PostBusLocationAddress")
-    public ResponseEntity<LocationAddress> postBusLocationAddress(@RequestParam Long locationId, @RequestBody LocationAddress address) {
-        return ResponseEntity.ok(busLocationService.createOrUpdateLocationAddress(locationId, address));
-    }
-
-    @PutMapping("/PutBusLocation")
-    public ResponseEntity<?> updateBusLocation(@RequestParam Long locationId, @RequestBody BusLocation location) {
-        return busLocationService.updateLocation(locationId, location)
-                .map(updatedLocation -> ResponseEntity.ok(updatedLocation))
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @PostMapping("/PostBusLocation")
-    public ResponseEntity<BusLocation> postBusLocation(@RequestBody BusLocation location) {
-        return ResponseEntity.ok(busLocationService.createLocation(location));
-    }
-
-    @DeleteMapping("/DeleteBusLocation")
-    public ResponseEntity<?> deleteBusLocation(@RequestParam Long locationId) {
-        boolean deleted = busLocationService.deleteLocation(locationId);
-
-        if (deleted) {
-            return ResponseEntity.ok("Location deleted successfully");
-        } else {
-            return ResponseEntity.notFound().build();
-        }
-    }
-
-    // Schedule endpoints
-    @GetMapping("/GetBusSchedules")
-    public ResponseEntity<List<BusSchedule>> getBusSchedules() {
-        return ResponseEntity.ok(busScheduleService.getAllSchedules());
-    }
-
-    @GetMapping("/searchBus")
-    public ResponseEntity<List<BusSchedule>> searchBus(
-            @RequestParam Long sourceId,
-            @RequestParam Long destId,
-            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") Date departureDate) {
-        return ResponseEntity.ok(busScheduleService.searchBus(sourceId, destId, departureDate));
-    }
-
-    @GetMapping("/getBookedSeats")
-    public ResponseEntity<List<String>> getBookedSeats(@RequestParam Long scheduleId) {
-        return ResponseEntity.ok(busBookingService.getBookedSeatsBySchedule(scheduleId));
-    }
-
-    @GetMapping("/searchBus2")
-    public ResponseEntity<List<BusSchedule>> searchBus2(
-            @RequestParam String sourceCity,
-            @RequestParam String destCity,
-            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") Date departureDate) {
-        return ResponseEntity.ok(busScheduleService.searchBusByCity(sourceCity, destCity, departureDate));
-    }
-
-    @GetMapping("/GetBusScheduleById")
-    public ResponseEntity<?> getBusScheduleById(@RequestParam Long scheduleId) {
-        return busScheduleService.getScheduleById(scheduleId)
-                .map(schedule -> ResponseEntity.ok(schedule))
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @PutMapping("/PutBusSchedule")
-    public ResponseEntity<?> updateBusSchedule(@RequestParam Long scheduleId, @RequestBody BusSchedule schedule) {
-        return busScheduleService.updateSchedule(scheduleId, schedule)
-                .map(updatedSchedule -> ResponseEntity.ok(updatedSchedule))
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @PostMapping("/PostBusSchedule")
-    public ResponseEntity<BusSchedule> postBusSchedule(@RequestBody BusSchedule schedule) {
-        return ResponseEntity.ok(busScheduleService.createSchedule(schedule));
-    }
-
-    @DeleteMapping("/DeleteBusSchedule")
-    public ResponseEntity<?> deleteBusSchedule(@RequestParam Long scheduleId) {
-        boolean deleted = busScheduleService.deleteSchedule(scheduleId);
-
-        if (deleted) {
-            return ResponseEntity.ok("Schedule deleted successfully");
-        } else {
-            return ResponseEntity.notFound().build();
-        }
-    }
-
-    // Route endpoints
-    @GetMapping("/GetAllRoutes")
-    public ResponseEntity<List<Route>> getAllRoutes() {
-        return ResponseEntity.ok(routeService.getAllRoutes());
-    }
-
-    @GetMapping("/GetRouteById")
-    public ResponseEntity<?> getRouteById(@RequestParam Long routeId) {
-        return routeService.getRouteById(routeId)
-                .map(route -> ResponseEntity.ok(route))
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @PostMapping("/CreateRoute")
-    public ResponseEntity<Route> createRoute(@RequestBody Route route) {
-        return ResponseEntity.ok(routeService.createRoute(route));
-    }
-
-    @PutMapping("/UpdateRoute")
-    public ResponseEntity<?> updateRoute(@RequestParam Long routeId, @RequestBody Route route) {
-        return routeService.updateRoute(routeId, route)
-                .map(updatedRoute -> ResponseEntity.ok(updatedRoute))
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @DeleteMapping("/DeleteRoute")
-    public ResponseEntity<?> deleteRoute(@RequestParam Long routeId) {
-        boolean deleted = routeService.deleteRoute(routeId);
-
-        if (deleted) {
-            return ResponseEntity.ok("Route deleted successfully");
-        } else {
-            return ResponseEntity.notFound().build();
-        }
-    }
-
-    @GetMapping("/GetRoutesByCompany")
-    public ResponseEntity<List<Route>> getRoutesByCompany(@RequestParam Long companyId) {
-        return ResponseEntity.ok(routeService.getRoutesByCompany(companyId));
-    }
-
-    @GetMapping("/GetActiveRoutes")
-    public ResponseEntity<List<Route>> getActiveRoutes() {
-        return ResponseEntity.ok(routeService.getActiveRoutes());
-    }
-
-    @GetMapping("/SearchRoutesByName")
-    public ResponseEntity<List<Route>> searchRoutesByName(@RequestParam String name) {
-        return ResponseEntity.ok(routeService.searchRoutesByName(name));
-    }
-
-    @GetMapping("/GetRouteByCode")
-    public ResponseEntity<?> getRouteByCode(@RequestParam String code) {
-        return routeService.getRouteByCode(code)
-                .map(route -> ResponseEntity.ok(route))
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    // RouteStop endpoints
-    @GetMapping("/GetAllStops")
-    public ResponseEntity<List<RouteStop>> getAllStops() {
-        return ResponseEntity.ok(routeStopService.getAllStops());
-    }
-
-    @GetMapping("/GetStopById")
-    public ResponseEntity<?> getStopById(@RequestParam Long stopId) {
-        return routeStopService.getStopById(stopId)
-                .map(stop -> ResponseEntity.ok(stop))
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @PostMapping("/CreateStop")
-    public ResponseEntity<RouteStop> createStop(@RequestBody RouteStop stop) {
-        return ResponseEntity.ok(routeStopService.createStop(stop));
-    }
-
-    @PutMapping("/UpdateStop")
-    public ResponseEntity<?> updateStop(@RequestParam Long stopId, @RequestBody RouteStop stop) {
-        return routeStopService.updateStop(stopId, stop)
-                .map(updatedStop -> ResponseEntity.ok(updatedStop))
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @DeleteMapping("/DeleteStop")
-    public ResponseEntity<?> deleteStop(@RequestParam Long stopId) {
-        boolean deleted = routeStopService.deleteStop(stopId);
-
-        if (deleted) {
-            return ResponseEntity.ok("Stop deleted successfully");
-        } else {
-            return ResponseEntity.notFound().build();
-        }
-    }
-
-    @GetMapping("/GetStopsByRoute")
-    public ResponseEntity<List<RouteStop>> getStopsByRoute(@RequestParam Long routeId) {
-        return ResponseEntity.ok(routeStopService.getStopsByRoute(routeId));
-    }
-
-    @GetMapping("/GetStopsByLocation")
-    public ResponseEntity<List<RouteStop>> getStopsByLocation(@RequestParam Long locationId) {
-        return ResponseEntity.ok(routeStopService.getStopsByLocation(locationId));
-    }
-
-    @GetMapping("/GetPickupPointsByRoute")
-    public ResponseEntity<List<RouteStop>> getPickupPointsByRoute(@RequestParam Long routeId) {
-        return ResponseEntity.ok(routeStopService.getPickupPointsByRoute(routeId));
-    }
-
-    @GetMapping("/GetDropPointsByRoute")
-    public ResponseEntity<List<RouteStop>> getDropPointsByRoute(@RequestParam Long routeId) {
-        return ResponseEntity.ok(routeStopService.getDropPointsByRoute(routeId));
-    }
-
-    // Payment endpoints
-    @GetMapping("/GetAllPayments")
-    public ResponseEntity<List<Payment>> getAllPayments() {
-        return ResponseEntity.ok(paymentService.getAllPayments());
-    }
-
-    @GetMapping("/GetPaymentById")
-    public ResponseEntity<?> getPaymentById(@RequestParam Long paymentId) {
-        return paymentService.getPaymentById(paymentId)
-                .map(payment -> ResponseEntity.ok(payment))
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @PostMapping("/CreatePayment")
-    public ResponseEntity<Payment> createPayment(@RequestBody Payment payment) {
-        return ResponseEntity.ok(paymentService.createPayment(payment));
-    }
-
-    @PutMapping("/UpdatePayment")
-    public ResponseEntity<?> updatePayment(@RequestParam Long paymentId, @RequestBody Payment payment) {
-        return paymentService.updatePayment(paymentId, payment)
-                .map(updatedPayment -> ResponseEntity.ok(updatedPayment))
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @DeleteMapping("/DeletePayment")
-    public ResponseEntity<?> deletePayment(@RequestParam Long paymentId) {
-        boolean deleted = paymentService.deletePayment(paymentId);
-
-        if (deleted) {
-            return ResponseEntity.ok("Payment deleted successfully");
-        } else {
-            return ResponseEntity.notFound().build();
-        }
-    }
-
-    @GetMapping("/GetPaymentsByBooking")
-    public ResponseEntity<List<Payment>> getPaymentsByBooking(@RequestParam Long bookingId) {
-        return ResponseEntity.ok(paymentService.getPaymentsByBooking(bookingId));
-    }
-
-    @GetMapping("/GetPaymentsByStatus")
-    public ResponseEntity<List<Payment>> getPaymentsByStatus(@RequestParam String status) {
-        return ResponseEntity.ok(paymentService.getPaymentsByStatus(status));
-    }
-
-    @GetMapping("/GetPaymentsByMethod")
-    public ResponseEntity<List<Payment>> getPaymentsByMethod(@RequestParam String paymentMethod) {
-        return ResponseEntity.ok(paymentService.getPaymentsByMethod(paymentMethod));
-    }
-
-    @GetMapping("/GetPaymentByTransactionId")
-    public ResponseEntity<?> getPaymentByTransactionId(@RequestParam String transactionId) {
-        return paymentService.getPaymentByTransactionId(transactionId)
-                .map(payment -> ResponseEntity.ok(payment))
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    // Booking endpoints
+    /**
+     * Get all bus bookings
+     * @return List of all bus bookings
+     */
     @GetMapping("/GetAllBusBookings")
     public ResponseEntity<List<BusBooking>> getAllBusBookings() {
-        return ResponseEntity.ok(busBookingService.getAllBookings());
-    }
-    @GetMapping("/GetBusBookingsByUserId")
-    public ResponseEntity<List<BusBooking>> getBusBookingsByUserId(@RequestParam Long userId) {
-        return ResponseEntity.ok(busBookingService.getBookingsByUser(userId));
+        List<BusBooking> bookings = busBookingService.getAllBookings();
+        return new ResponseEntity<>(bookings, HttpStatus.OK);
     }
 
-    @GetMapping("/GetBusBookingsByScheduleId")
-    public ResponseEntity<List<BusBooking>> getBusBookingsByScheduleId(@RequestParam Long scheduleId) {
-        return ResponseEntity.ok(busBookingService.getBookingsBySchedule(scheduleId));
-    }
-
-    @GetMapping("/GetActiveBusBookingsByUserId")
-    public ResponseEntity<List<BusBooking>> getActiveBusBookingsByUserId(@RequestParam Long userId, @RequestParam String status) {
-        return ResponseEntity.ok(busBookingService.getActiveBookings(userId, status));
-    }
-
-
-
+    /**
+     * Get a specific bus booking by ID
+     * @param id The booking ID
+     * @return The bus booking if found
+     */
     @GetMapping("/GetBusBooking")
-    public ResponseEntity<?> getBusBooking(@RequestParam Long bookingId) {
-        return busBookingService.getBookingById(bookingId)
-                .map(booking -> ResponseEntity.ok(booking))
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<BusBooking> getBusBooking(@RequestParam Long id) {
+        Optional<BusBooking> booking = busBookingService.getBookingById(id);
+        return booking.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
+                .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
+    /**
+     * Create a new bus booking
+     * @param requestMap The booking details
+     * @return The created booking
+     */
     @PostMapping("/PostBusBooking")
-    public ResponseEntity<BusBooking> postBusBooking(@RequestBody BusBooking booking) {
-        return ResponseEntity.ok(busBookingService.createBooking(booking));
+    public ResponseEntity<BusBooking> createBusBooking(@RequestBody Map<String, Object> requestMap) {
+        try {
+            logger.info("Creating new booking with request data: " + requestMap);
+
+            // Extract user information
+            Map<String, Object> userMap = (Map<String, Object>) requestMap.get("user");
+            if (userMap == null || userMap.get("id") == null) {
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            }
+            Long userId = Long.valueOf(userMap.get("id").toString());
+            User user = userservice.findById(userId);
+            if (user == null) {
+                logger.warning("User not found with ID: " + userId);
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            }
+
+            // Extract schedule information
+            Map<String, Object> scheduleMap = (Map<String, Object>) requestMap.get("schedule");
+            if (scheduleMap == null || scheduleMap.get("id") == null) {
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            }
+            Long scheduleId = Long.valueOf(scheduleMap.get("id").toString());
+            Optional<BusSchedule> schedule = busScheduleservice.getScheduleById(scheduleId);
+            if (schedule.isEmpty()) {
+                logger.warning("Schedule not found with ID: " + scheduleId);
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            }
+
+            // Extract and parse booking date - FIXED
+            Date bookingDate = new Date(); // Default to current date
+            String bookingDateStr = (String) requestMap.get("bookingDate");
+            if (bookingDateStr != null) {
+                try {
+                    // Parse ISO 8601 format date string
+                    bookingDate = Date.from(Instant.parse(bookingDateStr));
+                } catch (Exception e) {
+                    logger.warning("Failed to parse date: " + bookingDateStr + ". Using current date instead. Error: " + e.getMessage());
+                    // Keep the default current date
+                }
+            }
+
+            // Extract other booking details
+            String status = (String) requestMap.get("status");
+            Integer numberOfSeats = requestMap.get("numberOfSeats") != null ?
+                    Integer.valueOf(requestMap.get("numberOfSeats").toString()) : 0;
+
+            Double totalFare = requestMap.get("totalFare") != null ?
+                    Double.valueOf(requestMap.get("totalFare").toString()) : 0.0;
+
+            String seatNumbers = (String) requestMap.get("seatNumbers");
+            String paymentMethod = (String) requestMap.get("paymentMethod");
+            String paymentStatus = (String) requestMap.get("paymentStatus");
+            String transactionId = (String) requestMap.get("transactionId");
+
+            // Create and populate the BusBooking object
+            BusBooking booking = new BusBooking();
+            booking.setUser(user);
+            booking.setSchedule(schedule.orElse(null));
+            booking.setBookingDate(bookingDate);
+            booking.setStatus(status != null ? status : "PENDING");
+            booking.setNumberOfSeats(numberOfSeats);
+            booking.setTotalFare(totalFare);
+            booking.setSeatNumbers(seatNumbers);
+            booking.setPaymentMethod(paymentMethod != null ? paymentMethod : "PENDING");
+            booking.setPaymentStatus(paymentStatus != null ? paymentStatus : "PENDING");
+            booking.setTransactionId(transactionId);
+
+            // Create the booking
+            BusBooking createdBooking = busBookingService.createBooking(booking);
+            logger.info("Successfully created booking with ID: " + createdBooking.getBookingId());
+
+            return new ResponseEntity<>(createdBooking, HttpStatus.CREATED);
+        } catch (Exception e) {
+            logger.severe("Error creating booking: " + e.getMessage());
+            e.printStackTrace();
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
     }
 
+    /**
+     * Delete a bus booking
+     * @param id The booking ID to delete
+     * @return Success/failure status
+     */
     @DeleteMapping("/DeleteBusBooking")
-    public ResponseEntity<?> deleteBusBooking(@RequestParam Long bookingId) {
-        boolean deleted = busBookingService.deleteBooking(bookingId);
+    public ResponseEntity<Void> deleteBusBooking(@RequestParam Long id) {
+        boolean deleted = busBookingService.deleteBooking(id);
+        return deleted ? new ResponseEntity<>(HttpStatus.NO_CONTENT) :
+                new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    }
 
-        if (deleted) {
-            return ResponseEntity.ok("Booking deleted successfully");
-        } else {
-            return ResponseEntity.notFound().build();
+    /**
+     * Get bookings by user ID
+     * @param userId The user ID
+     * @return List of bookings for the user
+     */
+    @GetMapping("/GetBookingsByUser")
+    public ResponseEntity<List<BusBooking>> getBookingsByUser(@RequestParam Long userId) {
+        List<BusBooking> bookings = busBookingService.getBookingsByUser(userId);
+        return new ResponseEntity<>(bookings, HttpStatus.OK);
+    }
+
+    /**
+     * Get bookings by schedule ID
+     * @param scheduleId The schedule ID
+     * @return List of bookings for the schedule
+     */
+    @GetMapping("/GetBookingsBySchedule")
+    public ResponseEntity<List<BusBooking>> getBookingsBySchedule(@RequestParam Long scheduleId) {
+        List<BusBooking> bookings = busBookingService.getBookingsBySchedule(scheduleId);
+        return new ResponseEntity<>(bookings, HttpStatus.OK);
+    }
+
+    /**
+     * Get bookings by date
+     * @param date The booking date
+     * @return List of bookings for the date
+     */
+    @GetMapping("/GetBookingsByDate")
+    public ResponseEntity<List<BusBooking>> getBookingsByDate(
+            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") Date date) {
+        List<BusBooking> bookings = busBookingService.getBookingsByDate(date);
+        return new ResponseEntity<>(bookings, HttpStatus.OK);
+    }
+
+    /**
+     * Get bookings by date range
+     * @param startDate The start date
+     * @param endDate The end date
+     * @return List of bookings within the date range
+     */
+    @GetMapping("/GetBookingsByDateRange")
+    public ResponseEntity<List<BusBooking>> getBookingsByDateRange(
+            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") Date startDate,
+            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") Date endDate) {
+        List<BusBooking> bookings = busBookingService.getBookingsByDateRange(startDate, endDate);
+        return new ResponseEntity<>(bookings, HttpStatus.OK);
+    }
+
+
+
+    /**
+     * Get active bookings for a user
+     * @param userId The user ID
+     * @param status The booking status
+     * @return List of active bookings
+     */
+    @GetMapping("/GetActiveBookings")
+    public ResponseEntity<List<BusBooking>> getActiveBookings(
+            @RequestParam Long userId,
+            @RequestParam String status) {
+        List<BusBooking> bookings = busBookingService.getActiveBookings(userId, status);
+        return new ResponseEntity<>(bookings, HttpStatus.OK);
+    }
+
+    /**
+     * Cancel a booking
+     * @param id The booking ID to cancel
+     * @return Success/failure status
+     */
+    @PostMapping("/CancelBooking")
+    public ResponseEntity<Void> cancelBooking(@RequestParam Long id) {
+        boolean cancelled = busBookingService.cancelBooking(id);
+        return cancelled ? new ResponseEntity<>(HttpStatus.OK) :
+                new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    }
+
+    /**
+     * Get booked seats for a schedule
+     * @param scheduleId The schedule ID
+     * @return List of booked seat numbers
+     */
+    @GetMapping("/GetBookedSeats")
+    public ResponseEntity<List<String>> getBookedSeats(@RequestParam Long scheduleId) {
+        List<String> bookedSeats = busBookingService.getBookedSeatsBySchedule(scheduleId);
+        return new ResponseEntity<>(bookedSeats, HttpStatus.OK);
+    }
+
+    /**
+     * Update a booking
+     * @param id The booking ID
+     * @param booking The updated booking details
+     * @return The updated booking
+     */
+    @PutMapping("/UpdateBooking")
+    public ResponseEntity<BusBooking> updateBooking(
+            @RequestParam Long id,
+            @RequestBody BusBooking booking) {
+        try {
+            // First, get the existing booking to ensure we have a managed entity
+            Optional<BusBooking> existingBookingOpt = busBookingService.getBookingById(id);
+            if (existingBookingOpt.isEmpty()) {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+
+            BusBooking existingBooking = existingBookingOpt.get();
+
+            // Update only the fields that should be updated, keeping the existing relationships
+            existingBooking.setStatus(booking.getStatus());
+            existingBooking.setNumberOfSeats(booking.getNumberOfSeats());
+            existingBooking.setTotalFare(booking.getTotalFare());
+            existingBooking.setSeatNumbers(booking.getSeatNumbers());
+            existingBooking.setPaymentMethod(booking.getPaymentMethod());
+            existingBooking.setPaymentStatus(booking.getPaymentStatus());
+            existingBooking.setTransactionId(booking.getTransactionId());
+
+            // If booking date is provided, update it
+            if (booking.getBookingDate() != null) {
+                existingBooking.setBookingDate(booking.getBookingDate());
+            }
+
+            // We don't update the user or schedule relationships to avoid transient entity issues
+
+            BusBooking updatedBooking = busBookingService.updateBooking(id, existingBooking);
+            return new ResponseEntity<>(updatedBooking, HttpStatus.OK);
+        } catch (Exception e) {
+            logger.severe("Error updating booking: " + e.getMessage());
+            e.printStackTrace();
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    /**
+     * Get bookings by status
+     * @param status The booking status
+     * @return List of bookings with the specified status
+     */
+    @GetMapping("/GetBookingsByStatus")
+    public ResponseEntity<List<BusBooking>> getBookingsByStatus(@RequestParam String status) {
+        List<BusBooking> bookings = busBookingService.getBookingsByStatus(status);
+        return new ResponseEntity<>(bookings, HttpStatus.OK);
+    }
+
+    /**
+     * Get bookings by company
+     * @param companyId The company ID
+     * @return List of bookings for the company
+     */
+    @GetMapping("/GetBookingsByCompany")
+    public ResponseEntity<List<BusBooking>> getBookingsByCompany(@RequestParam Long companyId) {
+        List<BusBooking> bookings = busBookingService.getBookingsByCompany(companyId);
+        return new ResponseEntity<>(bookings, HttpStatus.OK);
+    }
+
+    /**
+     * Get bookings by route
+     * @param routeId The route ID
+     * @return List of bookings for the route
+     */
+    @GetMapping("/GetBookingsByRoute")
+    public ResponseEntity<List<BusBooking>> getBookingsByRoute(@RequestParam Long routeId) {
+        List<BusBooking> bookings = busBookingService.getBookingsByRoute(routeId);
+        return new ResponseEntity<>(bookings, HttpStatus.OK);
+    }
+
+    /**
+     * Check if a seat is available
+     * @param scheduleId The schedule ID
+     * @param seatNumber The seat number
+     * @return True if the seat is available, false otherwise
+     */
+    @GetMapping("/IsSeatAvailable")
+    public ResponseEntity<Boolean> isSeatAvailable(
+            @RequestParam Long scheduleId,
+            @RequestParam String seatNumber) {
+        boolean available = busBookingService.isSeatAvailable(scheduleId, seatNumber);
+        return new ResponseEntity<>(available, HttpStatus.OK);
+    }
+
+    /**
+     * Check if multiple seats are available
+     * @param scheduleId The schedule ID
+     * @param seatNumbers The list of seat numbers
+     * @return True if all seats are available, false otherwise
+     */
+    @PostMapping("/AreSeatsAvailable")
+    public ResponseEntity<Boolean> areSeatsAvailable(
+            @RequestParam Long scheduleId,
+            @RequestBody List<String> seatNumbers) {
+        boolean available = busBookingService.areSeatsAvailable(scheduleId, seatNumbers);
+        return new ResponseEntity<>(available, HttpStatus.OK);
+    }
+
+    /**
+     * Search bookings by term
+     * @param searchTerm The search term
+     * @return List of matching bookings
+     */
+    @GetMapping("/SearchBookings")
+    public ResponseEntity<List<BusBooking>> searchBookings(@RequestParam String searchTerm) {
+        List<BusBooking> bookings = busBookingService.searchBookings(searchTerm);
+        return new ResponseEntity<>(bookings, HttpStatus.OK);
+    }
+
+    /**
+     * Count bookings by user ID
+     * @param userId The user ID
+     * @return Count of bookings for the user
+     */
+    @GetMapping("/CountBookingsByUser")
+    public ResponseEntity<Integer> countBookingsByUser(@RequestParam Long userId) {
+        int count = busBookingService.CountBusBookingsByUserId(userId);
+        return new ResponseEntity<>(count, HttpStatus.OK);
     }
 }
