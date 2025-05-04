@@ -201,6 +201,9 @@ public class AuthController {
             logger.info("Verifying password for admin: " + userDetails.getUsername());
             boolean passwordMatches = passwordEncoder.matches(loginRequest.getPassword(), userDetails.getPassword());
             logger.info("Password match result: " + passwordMatches);
+            String providedpass = passwordEncoder.encode(loginRequest.getPassword());
+            logger.info("user password: "+userDetails.getPassword());
+            logger.info("provided password: "+providedpass);
 
             if (!passwordMatches) {
                 logger.warning("Password verification failed for admin: " + userDetails.getUsername());
@@ -216,7 +219,7 @@ public class AuthController {
 
             logger.info("Password verified successfully for admin: " + userDetails.getUsername());
 
-            // 4. If we get here, authentication was successful
+            // 4. ticketIf we get here, authentication was successful
             final String jwt = jwtUtil.generateToken(userDetails);
             logger.info("JWT token generated for admin: " + userDetails.getUsername());
 
@@ -335,6 +338,11 @@ public class AuthController {
             if (user == null) {
                 return ResponseEntity.badRequest().body("User not found with email: " + email);
             }
+
+            logger.info("new password going to be set "+ newPassword);
+            logger.info("for user "+ email);
+            logger.info("Current password hash: " + user.getPassword());
+
 
             // Encode the new password and update the user
             String encodedPassword = passwordEncoder.encode(newPassword);

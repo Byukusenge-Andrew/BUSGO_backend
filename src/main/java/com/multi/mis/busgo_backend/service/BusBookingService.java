@@ -169,6 +169,21 @@ public class BusBookingService {
     }
 
     
+    /**
+     * Updates the status of a specific booking.
+     * @param bookingId The ID of the booking to update.
+     * @param status The new status (e.g., "CONFIRMED", "CANCELLED").
+     * @return The updated booking.
+     * @throws RuntimeException if the booking is not found.
+     */
+    @Transactional
+    public BusBooking updateBookingStatus(Long bookingId, String status) {
+        BusBooking booking = busBookingRepository.findById(bookingId)
+                .orElseThrow(() -> new RuntimeException("Booking not found with ID: " + bookingId));
+        booking.setStatus(status);
+        return busBookingRepository.save(booking);
+    }
+    
     public List<BusBooking> getBookingsByStatus(String status) {
         return busBookingRepository.findAll().stream()
             .filter(booking -> booking.getStatus().equalsIgnoreCase(status))
@@ -207,4 +222,23 @@ public class BusBookingService {
                 booking.getSchedule().getRoute().getName().toLowerCase().contains(searchLower))
             .collect(Collectors.toList());
     }
+
+    /**
+     * Updates the booking status to CONFIRMED and paymentStatus to COMPLETED
+     * typically after a successful payment.
+     * @param bookingId The ID of the booking to update.
+     * @return The updated booking.
+     * @throws RuntimeException if the booking is not found.
+     */
+    @Transactional
+    public BusBooking confirmBookingAfterPayment(Long bookingId) {
+        BusBooking booking = busBookingRepository.findById(bookingId)
+                .orElseThrow(() -> new RuntimeException("Booking not found with ID: " + bookingId));
+
+        booking.setStatus("CONFIRMED");
+        booking.setPaymentStatus("COMPLETED"); // Set payment status here
+
+        return busBookingRepository.save(booking);
+    }
+
 } 
