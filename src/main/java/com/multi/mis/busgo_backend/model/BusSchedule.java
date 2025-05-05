@@ -6,44 +6,48 @@ import java.util.Date;
 @Entity
 @Table(name = "bus_schedules")
 public class BusSchedule {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long scheduleId;
-    
+
     @ManyToOne
     @JoinColumn(name = "company_id")
     private BusCompany company;
-    
+
     @ManyToOne
     @JoinColumn(name = "route_id")
     private Route route;
-    
+
     @ManyToOne
     @JoinColumn(name = "source_location_id")
     private BusLocation sourceLocation;
-    
+
     @ManyToOne
     @JoinColumn(name = "destination_location_id")
     private BusLocation destinationLocation;
-    
+
+    @Temporal(TemporalType.TIMESTAMP)
     private Date departureTime;
+
+    @Temporal(TemporalType.TIMESTAMP)
     private Date arrivalTime;
+
     private Double fare;
-    private String busType; // AC, Non-AC, Sleeper, etc.
+    private String busType;
     private Integer totalSeats;
     private Integer availableSeats;
     private String busNumber;
     private boolean active;
-    
+
     // Default constructor
     public BusSchedule() {
     }
-    
+
     // Constructor with fields
     public BusSchedule(BusCompany company, Route route, BusLocation sourceLocation, BusLocation destinationLocation,
-                      Date departureTime, Date arrivalTime, Double fare, String busType,
-                      Integer totalSeats, Integer availableSeats, String busNumber, boolean active) {
+                       Date departureTime, Date arrivalTime, Double fare, String busType,
+                       Integer totalSeats, Integer availableSeats, String busNumber, boolean active) {
         this.company = company;
         this.route = route;
         this.sourceLocation = sourceLocation;
@@ -57,7 +61,7 @@ public class BusSchedule {
         this.busNumber = busNumber;
         this.active = active;
     }
-    
+
     // Getters and Setters
     public Long getScheduleId() {
         return scheduleId;
@@ -66,8 +70,7 @@ public class BusSchedule {
     public void setScheduleId(Long scheduleId) {
         this.scheduleId = scheduleId;
     }
-    
-    // Method to get ID that matches other entity conventions
+
     public Long getId() {
         return scheduleId;
     }
@@ -79,11 +82,11 @@ public class BusSchedule {
     public void setCompany(BusCompany company) {
         this.company = company;
     }
-    
+
     public Route getRoute() {
         return route;
     }
-    
+
     public void setRoute(Route route) {
         this.route = route;
     }
@@ -167,4 +170,4 @@ public class BusSchedule {
     public void setActive(boolean active) {
         this.active = active;
     }
-} 
+}

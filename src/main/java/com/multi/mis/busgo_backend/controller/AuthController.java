@@ -72,10 +72,6 @@ public class AuthController {
             }
 
             // 2. Check password manually
-            if (userDetails == null) {
-                logger.warning("UserDetails is null after loadUserByUsername");
-                return ResponseEntity.badRequest().body("User not found");
-            }
 
             // 3. Use passwordEncoder to verify the password
             logger.info("Verifying password for user: " + userDetails.getUsername());

@@ -32,7 +32,6 @@ public class BusScheduleService {
     @Autowired
     private BusLocationRepository busLocationRepository;
 
-    // Expose repositories for BusScheduleController
     public BusCompanyRepository getBusCompanyRepository() {
         return busCompanyRepository;
     }
@@ -73,6 +72,10 @@ public class BusScheduleService {
         if (schedule.getArrivalTime() == null) {
             logger.error("Arrival time is required");
             throw new IllegalArgumentException("Arrival time is required");
+        }
+        if (!schedule.getArrivalTime().after(schedule.getDepartureTime())) {
+            logger.error("Arrival time must be after departure time");
+            throw new IllegalArgumentException("Arrival time must be after departure time");
         }
         if (schedule.getFare() == null || schedule.getFare() < 0) {
             logger.error("Invalid fare");
@@ -130,6 +133,10 @@ public class BusScheduleService {
                     }
                     if (updatedSchedule.getArrivalTime() != null) {
                         existingSchedule.setArrivalTime(updatedSchedule.getArrivalTime());
+                    }
+                    if (updatedSchedule.getArrivalTime() != null && updatedSchedule.getDepartureTime() != null &&
+                            !updatedSchedule.getArrivalTime().after(updatedSchedule.getDepartureTime())) {
+                        throw new IllegalArgumentException("Arrival time must be after departure time");
                     }
                     if (updatedSchedule.getFare() != null) {
                         existingSchedule.setFare(updatedSchedule.getFare());

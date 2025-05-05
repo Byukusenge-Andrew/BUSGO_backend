@@ -63,6 +63,8 @@ public class User implements UserDetails {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    private  String secretKey;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
@@ -82,7 +84,7 @@ public class User implements UserDetails {
         this.role = role;
         this.isActive = status.equals("ACTIVE");
     }
-    public User(String username, String password, String email, String firstName, String lastName, String phoneNumber, String role) {
+    public User(String username, String password, String email, String firstName, String lastName, String phoneNumber, String role,String secretKey) {
         this.username = username;
         this.password = password;
         this.email = email;
@@ -90,6 +92,7 @@ public class User implements UserDetails {
         this.lastName = lastName;
         this.phoneNumber = phoneNumber;
         this.role = role;
+        this.secretKey = secretKey;
         this.isActive = true; // Default to active
     }
     @Override
@@ -117,10 +120,21 @@ public class User implements UserDetails {
         return isActive;
     }
 
+
+    public String getSecretKey() {
+        return secretKey;
+    }
+
+    public void setSecretKey(String secretKey) {
+        this.secretKey = secretKey;
+    }
+
     // Getters and Setters
     public Long getId() {
         return id;
     }
+
+
 
     public void setId(Long id) {
         this.id = id;

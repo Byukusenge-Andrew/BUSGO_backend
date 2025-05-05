@@ -79,15 +79,22 @@ public class BusScheduleController {
                         Collections.singletonMap("error", "Invalid ID format"));
             }
 
-            // Parse dates
-            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+            // Parse dates in local time format: yyyy-MM-dd'T'HH:mm:ss
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+            dateFormat.setLenient(false);
             Date departureTime, arrivalTime;
             try {
                 departureTime = dateFormat.parse(departureTimeStr);
                 arrivalTime = dateFormat.parse(arrivalTimeStr);
             } catch (Exception e) {
                 return ResponseEntity.badRequest().body(
-                        Collections.singletonMap("error", "Invalid date format"));
+                        Collections.singletonMap("error", "Invalid date format. Expected yyyy-MM-dd'T'HH:mm:ss"));
+            }
+
+            // Validate arrivalTime is after departureTime
+            if (!arrivalTime.after(departureTime)) {
+                return ResponseEntity.badRequest().body(
+                        Collections.singletonMap("error", "Arrival time must be after departure time"));
             }
 
             // Convert numeric fields
@@ -164,7 +171,7 @@ public class BusScheduleController {
     }
 
     @GetMapping("/company/{companyId}")
-    public ResponseEntity<List<BusSchedule>> getBusScheduleByCompany(@PathVariable Long companyId ) {
+    public ResponseEntity<List<BusSchedule>> getBusScheduleByCompany(@PathVariable Long companyId) {
         return ResponseEntity.ok(busScheduleService.getBusScheduleByCompany(companyId));
     }
 
