@@ -27,11 +27,24 @@ public class BusBookingService {
     public List<BusBooking> getAllBookings() {
         return busBookingRepository.findAll();
     }
-    
-    public Optional<BusBooking> getBookingById(Long id) {
-        return busBookingRepository.findById(id);
+
+    @Transactional
+    public BusBooking getBookingById(Long bookingId) {
+        BusBooking booking = busBookingRepository.findById(bookingId)
+                .orElseThrow(() -> new RuntimeException("Booking not found with ID: " + bookingId));
+        if (booking.getSchedule() == null) {
+            throw new RuntimeException("Booking ID: " + bookingId + " has no associated schedule.");
+        }
+        return booking;
     }
 
+    @Transactional
+    public void confirmBookingAfterPayment(Long bookingId) {
+        BusBooking booking = getBookingById(bookingId);
+        booking.setStatus("CONFIRMED");
+        booking.setPaymentStatus("COMPLETED");
+        busBookingRepository.save(booking);
+    }
 
     public int CountBusBookingsByUserId(Long userId) {
         List<BusBooking> userBookings = getBookingsByUser(userId);
@@ -43,6 +56,8 @@ public class BusBookingService {
     public List<BusBooking> getBookingByCompany(Long companyId) {
         return busBookingRepository.findByCompany_CompanyId(companyId);
     }
+
+
 
 
 
@@ -230,15 +245,15 @@ public class BusBookingService {
      * @return The updated booking.
      * @throws RuntimeException if the booking is not found.
      */
-    @Transactional
-    public BusBooking confirmBookingAfterPayment(Long bookingId) {
-        BusBooking booking = busBookingRepository.findById(bookingId)
-                .orElseThrow(() -> new RuntimeException("Booking not found with ID: " + bookingId));
-
-        booking.setStatus("CONFIRMED");
-        booking.setPaymentStatus("COMPLETED"); // Set payment status here
-
-        return busBookingRepository.save(booking);
-    }
+//    @Transactional
+//    public BusBooking confirmBookingAfterPayment(Long bookingId) {
+//        BusBooking booking = busBookingRepository.findById(bookingId)
+//                .orElseThrow(() -> new RuntimeException("Booking not found with ID: " + bookingId));
+//
+//        booking.setStatus("CONFIRMED");
+//        booking.setPaymentStatus("COMPLETED"); // Set payment status here
+//
+//        return busBookingRepository.save(booking);
+//    }
 
 } 

@@ -60,7 +60,7 @@ public class BusBookingController {
      */
     @GetMapping("/GetBusBooking")
     public ResponseEntity<BusBooking> getBusBooking(@RequestParam Long id) {
-        Optional<BusBooking> booking = busBookingService.getBookingById(id);
+        Optional<BusBooking> booking = Optional.ofNullable(busBookingService.getBookingById(id));
         return booking.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
                 .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
@@ -261,7 +261,7 @@ public class BusBookingController {
             @RequestBody BusBooking booking) {
         try {
             // First, get the existing booking to ensure we have a managed entity
-            Optional<BusBooking> existingBookingOpt = busBookingService.getBookingById(id);
+            Optional<BusBooking> existingBookingOpt = Optional.ofNullable(busBookingService.getBookingById(id));
             if (existingBookingOpt.isEmpty()) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }

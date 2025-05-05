@@ -1,24 +1,27 @@
 package com.multi.mis.busgo_backend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.persistence.*;
 import java.util.Date;
 
 @Entity
 @Table(name = "bus_bookings")
+@JsonInclude(JsonInclude.Include.NON_NULL) // Exclude null fields from JSON
 public class BusBooking {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long bookingId;
-    
+
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
-    
+
     @ManyToOne
     @JoinColumn(name = "schedule_id")
     private BusSchedule schedule;
-    
+
     private Date bookingDate;
     private String status; // Confirmed, Cancelled, Pending
     private Integer numberOfSeats;
@@ -27,15 +30,15 @@ public class BusBooking {
     private String paymentMethod;
     private String paymentStatus;
     private String transactionId;
-    
+
     // Default constructor
     public BusBooking() {
     }
-    
+
     // Constructor with fields
     public BusBooking(User user, BusSchedule schedule, Date bookingDate, String status,
-                     Integer numberOfSeats, Double totalFare, String seatNumbers,
-                     String paymentMethod, String paymentStatus, String transactionId) {
+                      Integer numberOfSeats, Double totalFare, String seatNumbers,
+                      String paymentMethod, String paymentStatus, String transactionId) {
         this.user = user;
         this.schedule = schedule;
         this.bookingDate = bookingDate;
@@ -47,7 +50,7 @@ public class BusBooking {
         this.paymentStatus = paymentStatus;
         this.transactionId = transactionId;
     }
-    
+
     // Getters and Setters
     public Long getBookingId() {
         return bookingId;
@@ -56,13 +59,11 @@ public class BusBooking {
     public void setBookingId(Long bookingId) {
         this.bookingId = bookingId;
     }
-    
-    // Method to get ID that matches other entity conventions
+
     public Long getId() {
         return bookingId;
     }
-    
-    // Method to set ID that matches other entity conventions
+
     public void setId(Long id) {
         this.bookingId = id;
     }
@@ -103,13 +104,14 @@ public class BusBooking {
         return numberOfSeats;
     }
 
+    @JsonIgnore // Prevent serialization of getCompany() to avoid NullPointerException
     public BusCompany getCompany() {
-        return this.schedule.getCompany();
+        return this.schedule != null ? this.schedule.getCompany() : null;
     }
 
-
+    @JsonIgnore // Prevent serialization of GetCompanyId()
     public Long GetCompanyId() {
-        return this.schedule.getCompany().getId();
+        return this.schedule != null && this.schedule.getCompany() != null ? this.schedule.getCompany().getId() : null;
     }
 
     public void setNumberOfSeats(Integer numberOfSeats) {
@@ -155,4 +157,4 @@ public class BusBooking {
     public void setTransactionId(String transactionId) {
         this.transactionId = transactionId;
     }
-} 
+}

@@ -1,5 +1,6 @@
 package com.multi.mis.busgo_backend.controller;
 
+import com.multi.mis.busgo_backend.service.PasswordResetService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -33,7 +34,8 @@ public class AuthController {
     private static final Logger logger = Logger.getLogger(AuthController.class.getName());
     @Autowired
     private AuthenticationManager authenticationManager;
-
+    @Autowired
+    private PasswordResetService passwordResetService;
     @Autowired
     private JwtUtil jwtUtil;
 
@@ -112,6 +114,86 @@ public class AuthController {
         }
     }
 
+    @PostMapping("/register")
+    public ResponseEntity<?> register(@RequestBody Map<String, Object> requestMap) {
+        try {
+            System.out.println("Received request to /api/auth/register");
+            System.out.println("Request data: " + requestMap);
+
+            // Manually extract fields from the request
+            String username = (String) requestMap.get("username");
+            String email = (String) requestMap.get("email");
+            String password = (String) requestMap.get("password");
+            String role = (String) requestMap.get("role");
+            String firstName = (String) requestMap.get("firstName");
+            String lastName = (String) requestMap.get("lastName");
+            String phoneNumber = (String) requestMap.get("phoneNumber");
+
+            // Handle isActive - could be sent as is_active or isActive
+            Boolean isActive = null;
+            if (requestMap.containsKey("isActive")) {
+                isActive = (Boolean) requestMap.get("isActive");
+            } else if (requestMap.containsKey("is_active")) {
+                isActive = (Boolean) requestMap.get("is_active");
+            }
+
+            // Validate required fields
+            if (username == null || email == null || password == null) {
+                return ResponseEntity.badRequest().body(
+                        java.util.Collections.singletonMap("message", "Username, email, and password are required")
+                );
+            }
+
+            System.out.println("Registering user: " + username + ", " + email);
+
+            // Check for duplicate username
+            if (userService.findByUsername(username) != null) {
+                return ResponseEntity.badRequest().body(
+                        java.util.Collections.singletonMap("message", "Username already exists")
+                );
+            }
+
+            // Check for duplicate email
+            if (userService.findByEmail(email) != null) {
+                return ResponseEntity.badRequest().body(
+                        java.util.Collections.singletonMap("message", "Email already exists")
+                );
+            }
+
+            // Create a new User object
+            User user = new User();
+            user.setUsername(username);
+            user.setEmail(email);
+            user.setPassword(passwordEncoder.encode(password));
+            user.setRole(role != null ? role : "USER"); // Default to USER if not specified
+            user.setFirstName(firstName);
+            user.setLastName(lastName);
+            user.setPhoneNumber(phoneNumber);
+            user.setActive(isActive != null ? isActive : true); // Default to true if not specified
+
+            User savedUser = userService.createUser(user);
+            System.out.println("User registered: " + savedUser.getUsername());
+
+            // Generate JWT token for the newly registered user
+            // Create UserDetails from the saved user
+            UserDetails userDetails = new org.springframework.security.core.userdetails.User(
+                    savedUser.getEmail(),
+                    savedUser.getPassword(),
+                    Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + savedUser.getRole()))
+            );
+
+            final String jwt = jwtUtil.generateToken(userDetails);
+
+            // Return the same response format as login
+            return ResponseEntity.ok(new LoginResponse(jwt, savedUser.getRole(), savedUser));
+        } catch (Exception e) {
+            System.out.println("Error registering user: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body(
+                    java.util.Collections.singletonMap("message", "Error registering user: " + e.getMessage())
+            );
+        }
+    }
 
 
     @PostMapping("/company/login")
@@ -239,120 +321,37 @@ public class AuthController {
         }
     }
 
-    @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody Map<String, Object> requestMap) {
+    @PostMapping("/request-password-reset")
+    public ResponseEntity<?> requestPasswordReset(@RequestBody Map<String, String> request) {
         try {
-            System.out.println("Received request to /api/auth/register");
-            System.out.println("Request data: " + requestMap);
-
-            // Manually extract fields from the request
-            String username = (String) requestMap.get("username");
-            String email = (String) requestMap.get("email");
-            String password = (String) requestMap.get("password");
-            String role = (String) requestMap.get("role");
-            String firstName = (String) requestMap.get("firstName");
-            String lastName = (String) requestMap.get("lastName");
-            String phoneNumber = (String) requestMap.get("phoneNumber");
-
-            // Handle isActive - could be sent as is_active or isActive
-            Boolean isActive = null;
-            if (requestMap.containsKey("isActive")) {
-                isActive = (Boolean) requestMap.get("isActive");
-            } else if (requestMap.containsKey("is_active")) {
-                isActive = (Boolean) requestMap.get("is_active");
+            String email = request.get("email");
+            if (email == null || email.isEmpty()) {
+                return ResponseEntity.badRequest().body("Email is required");
             }
 
-            // Validate required fields
-            if (username == null || email == null || password == null) {
-                return ResponseEntity.badRequest().body(
-                        java.util.Collections.singletonMap("message", "Username, email, and password are required")
-                );
-            }
-
-            System.out.println("Registering user: " + username + ", " + email);
-
-            // Check for duplicate username
-            if (userService.findByUsername(username) != null) {
-                return ResponseEntity.badRequest().body(
-                        java.util.Collections.singletonMap("message", "Username already exists")
-                );
-            }
-
-            // Check for duplicate email
-            if (userService.findByEmail(email) != null) {
-                return ResponseEntity.badRequest().body(
-                        java.util.Collections.singletonMap("message", "Email already exists")
-                );
-            }
-
-            // Create a new User object
-            User user = new User();
-            user.setUsername(username);
-            user.setEmail(email);
-            user.setPassword(passwordEncoder.encode(password));
-            user.setRole(role != null ? role : "USER"); // Default to USER if not specified
-            user.setFirstName(firstName);
-            user.setLastName(lastName);
-            user.setPhoneNumber(phoneNumber);
-            user.setActive(isActive != null ? isActive : true); // Default to true if not specified
-
-            User savedUser = userService.createUser(user);
-            System.out.println("User registered: " + savedUser.getUsername());
-
-            // Generate JWT token for the newly registered user
-            // Create UserDetails from the saved user
-            UserDetails userDetails = new org.springframework.security.core.userdetails.User(
-                    savedUser.getEmail(),
-                    savedUser.getPassword(),
-                    Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + savedUser.getRole()))
-            );
-
-            final String jwt = jwtUtil.generateToken(userDetails);
-
-            // Return the same response format as login
-            return ResponseEntity.ok(new LoginResponse(jwt, savedUser.getRole(), savedUser));
+            passwordResetService.createPasswordResetToken(email);
+            return ResponseEntity.ok("Password reset email sent successfully");
         } catch (Exception e) {
-            System.out.println("Error registering user: " + e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.badRequest().body(
-                    java.util.Collections.singletonMap("message", "Error registering user: " + e.getMessage())
-            );
+            logger.severe("Error requesting password reset: " + e.getMessage());
+            return ResponseEntity.badRequest().body("Error: " + e.getMessage());
         }
     }
 
     @PostMapping("/reset-password")
     public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> request) {
         try {
-            String email = request.get("email");
+            String token = request.get("token");
             String newPassword = request.get("newPassword");
 
-            if (email == null || newPassword == null) {
-                return ResponseEntity.badRequest().body("Email and newPassword are required");
+            if (token == null || newPassword == null) {
+                return ResponseEntity.badRequest().body("Token and new password are required");
             }
 
-            User user = userService.findByEmail(email);
-            if (user == null) {
-                return ResponseEntity.badRequest().body("User not found with email: " + email);
-            }
-
-            logger.info("new password going to be set "+ newPassword);
-            logger.info("for user "+ email);
-            logger.info("Current password hash: " + user.getPassword());
-
-
-            // Encode the new password and update the user
-            String encodedPassword = passwordEncoder.encode(newPassword);
-            user.setPassword(encodedPassword);
-            userService.updateUser(user.getId(), user);
-
-            logger.info("Password reset for user: " + user.getUsername());
-            logger.info("New password hash: " + encodedPassword);
-
+            passwordResetService.resetPassword(token, newPassword);
             return ResponseEntity.ok("Password reset successfully");
         } catch (Exception e) {
-            logger.severe("Error resetting password: " + e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.badRequest().body("Error resetting password: " + e.getMessage());
+            logger.severe("Error resetting password: Dünya " + e.getMessage());
+            return ResponseEntity.badRequest().body("Error: " + e.getMessage());
         }
     }
 }
