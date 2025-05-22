@@ -2,20 +2,18 @@ package com.multi.mis.busgo_backend.model;
 
 import java.util.Date;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "bus_companies")
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class BusCompany {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long companyId;
-    
+    @Column(nullable = false)
     private String companyName;
     private String contactPerson;
     private String contactEmail;

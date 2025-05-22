@@ -1,29 +1,34 @@
 package com.multi.mis.busgo_backend.model;
 
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.Date;
 
 @Entity
 @Table(name = "bus_schedules")
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class BusSchedule {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long scheduleId;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER) // Change to EAGER to ensure company is loaded
     @JoinColumn(name = "company_id")
+    @JsonProperty("company")
     private BusCompany company;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "route_id")
     private Route route;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "source_location_id")
     private BusLocation sourceLocation;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "destination_location_id")
     private BusLocation destinationLocation;
 

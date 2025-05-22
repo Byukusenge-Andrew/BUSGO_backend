@@ -17,8 +17,13 @@ public interface BusScheduleRepository extends JpaRepository<BusSchedule, Long> 
     List<BusSchedule> findByCompanyId(Long companyId);
     
     List<BusSchedule> findByActive(boolean active);
-    
-    @Query("SELECT bs FROM BusSchedule bs WHERE bs.sourceLocation.locationId = :sourceId " +
+
+    @Query("SELECT bs FROM BusSchedule bs " +
+            "JOIN FETCH bs.company " +
+            "JOIN FETCH bs.route " +
+            "JOIN FETCH bs.sourceLocation " +
+            "JOIN FETCH bs.destinationLocation " +
+            "WHERE bs.sourceLocation.locationId = :sourceId " +
             "AND bs.destinationLocation.locationId = :destId " +
             "AND DATE(bs.departureTime) = DATE(:departureDate) " +
             "AND bs.availableSeats > 0 AND bs.active = true")
@@ -26,8 +31,13 @@ public interface BusScheduleRepository extends JpaRepository<BusSchedule, Long> 
             @Param("sourceId") Long sourceId,
             @Param("destId") Long destId,
             @Param("departureDate") Date departureDate);
-    
-    @Query("SELECT bs FROM BusSchedule bs WHERE bs.sourceLocation.city = :sourceCity " +
+
+    @Query("SELECT bs FROM BusSchedule bs " +
+            "JOIN FETCH bs.company " +
+            "JOIN FETCH bs.route " +
+            "JOIN FETCH bs.sourceLocation " +
+            "JOIN FETCH bs.destinationLocation " +
+            "WHERE bs.sourceLocation.city = :sourceCity " +
             "AND bs.destinationLocation.city = :destCity " +
             "AND DATE(bs.departureTime) = DATE(:departureDate) " +
             "AND bs.availableSeats > 0 AND bs.active = true")
