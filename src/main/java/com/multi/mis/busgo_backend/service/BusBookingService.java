@@ -13,6 +13,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import com.multi.mis.busgo_backend.model.Ticket;
+import com.multi.mis.busgo_backend.service.TicketService;
+
 @Service
 public class BusBookingService {
     
@@ -23,6 +26,9 @@ public class BusBookingService {
     
     @Autowired
     private BusScheduleRepository busScheduleRepository;
+    
+    @Autowired
+    private TicketService ticketService;
     
     public List<BusBooking> getAllBookings() {
         return busBookingRepository.findAll();
@@ -43,7 +49,9 @@ public class BusBookingService {
         BusBooking booking = getBookingById(bookingId);
         booking.setStatus("CONFIRMED");
         booking.setPaymentStatus("COMPLETED");
-        busBookingRepository.save(booking);
+        BusBooking confirmedBooking = busBookingRepository.save(booking);
+
+        createTicketFromBooking(confirmedBooking);
     }
 
     public int CountBusBookingsByUserId(Long userId) {
@@ -86,7 +94,7 @@ public class BusBookingService {
     }
     public List<BusBooking> getActiveBookings(Long userId,String status) {
         return busBookingRepository.findAll().stream()
-            .filter(booking -> booking.getUser().getId().equals(userId) && booking.getStatus().equalsIgnoreCase(status))
+            .filter(booking -> booking.getUser().getId().equals(userId) )
             .collect(Collectors.toList());
     }
     
@@ -239,21 +247,45 @@ public class BusBookingService {
     }
 
     /**
-     * Updates the booking status to CONFIRMED and paymentStatus to COMPLETED
-     * typically after a successful payment.
-     * @param bookingId The ID of the booking to update.
-     * @return The updated booking.
-     * @throws RuntimeException if the booking is not found.
+     * Creates a Ticket entity from a confirmed BusBooking.
+     * @param booking The confirmed BusBooking object.
      */
-//    @Transactional
-//    public BusBooking confirmBookingAfterPayment(Long bookingId) {
-//        BusBooking booking = busBookingRepository.findById(bookingId)
-//                .orElseThrow(() -> new RuntimeException("Booking not found with ID: " + bookingId));
-//
-//        booking.setStatus("CONFIRMED");
-//        booking.setPaymentStatus("COMPLETED"); // Set payment status here
-//
-//        return busBookingRepository.save(booking);
-//    }
+    @Transactional
+    public void createTicketFromBooking(BusBooking booking) {
+        Ticket ticket = new Ticket();
+        ticket.setBookingId(booking.getBookingId());
+        // Split the comma-separated seat numbers string into a list
+        if (booking.getSeatNumbers() != null && !booking.getSeatNumbers().isEmpty()) {
+            ticket.setSeatNumbers(java.util.Arrays.asList(booking.getSeatNumbers().split(",")));
+        } else {
+            ticket.setSeatNumbers(java.util.Collections.emptyList());
+        }
+        ticket.setPrice(booking.getTotalFare());
+        ticket.setStatus("CONFIRMED");
+        ticket.setPaymentStatus(booking.getPaymentStatus());
+
+        if (booking.getUser() != null) {
+            ticket.setPassengerName(booking.getUser().getFirstName() + " " + booking.getUser().getLastName());
+            ticket.setPassengerEmail(booking.getUser().getEmail());
+            ticket.setPassengerPhone(booking.getUser().getPhoneNumber());
+        }
+
+        if (booking.getSchedule() != null) {
+            BusSchedule schedule = booking.getSchedule();
+            if (schedule.getRoute() != null) {
+                ticket.setRouteName(schedule.getRoute().getName());
+                ticket.setOrigin(schedule.getRoute().getOrigin());
+                ticket.setDestination(schedule.getRoute().getDestination());
+            }
+            ticket.setDepartureDate(schedule.getDepartureTime());
+            ticket.setDepartureTime(schedule.getDepartureTime() != null ? schedule.getDepartureTime().toString() : null);
+
+            ticket.setBusRegistration(schedule.getBusNumber());
+        }
+
+        ticket.setCreatedAt(new Date());
+
+        ticketService.saveTicket(ticket);
+    }
 
 } 

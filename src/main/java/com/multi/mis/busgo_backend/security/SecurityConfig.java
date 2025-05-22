@@ -2,6 +2,8 @@ package com.multi.mis.busgo_backend.security;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -11,6 +13,9 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+import java.util.Properties;
+
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
@@ -26,7 +31,12 @@ public class SecurityConfig {
                                 "/api/auth/company/login",
                                 "/api/auth/admin/login",
                                 "/api/auth/reset-password",
+                                "/api/auth/request-password-reset",
+                                  "/api/schedules/search",
                                 "/api/test/public",
+                                "/api/test",
+                                "/actuator/*",
+                                "/api/schedules",
                                 "/api/companies/login",
                                 "/error" // Add /error to permitAll
                         ).permitAll()
@@ -44,6 +54,24 @@ public class SecurityConfig {
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
         return authConfig.getAuthenticationManager();
     }
+
+    @Bean
+    public JavaMailSender getJavaMailSender() {
+        JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
+        // Use properties from application.properties instead of hardcoding
+        mailSender.setHost("smtp.mailersend.net");
+        mailSender.setPort(587);
+        mailSender.setUsername("MS_nLfXF8@test-zkq340ee7z6gd796.mlsender.net");
+        mailSender.setPassword("mssp.7r8OBnw.o65qngkkn2wgwr12.JdHwVJI");
+
+        Properties props = mailSender.getJavaMailProperties();
+        props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.starttls.enable", "true");
+        props.put("mail.debug", "true");
+
+        return mailSender;
+    }
+
 
     @Bean
     public PasswordEncoder passwordEncoder() {

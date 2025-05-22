@@ -129,9 +129,6 @@ public class UserController {
      * This is a placeholder implementation - you'll need to implement your own logic
      */
     private int calculateRewardsPoints(Long userId) {
-        // Placeholder implementation
-        // In a real application, this would calculate points based on booking history,
-        // user activity, or retrieve from a dedicated rewards service
         List<BusBooking> bookings = busBookingService.getBookingsByUser(userId);
         int totalBookings = bookings.size();
         int rewardsPoints = totalBookings * 10; // Example calculation: 10 points per booking

@@ -1,5 +1,6 @@
 package com.multi.mis.busgo_backend.service;
 
+import com.multi.mis.busgo_backend.dto.TicketDTO;
 import com.multi.mis.busgo_backend.model.Ticket;
 import com.multi.mis.busgo_backend.repository.TicketRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,7 +58,14 @@ public class TicketService {
         
         return allTickets;
     }
+    /**
+     * Get ticket by companyId
+     *
+     */
 
+    public List<TicketDTO> getTicketByCompanyId(Long companyId) {
+        return ticketRepository.findByCompanyId(companyId);
+    }
     /**
      * Get ticket by ID
      */
@@ -89,7 +97,7 @@ public class TicketService {
     /**
      * Get tickets by booking ID
      */
-    public List<Ticket> getTicketsByBookingId(String bookingId) {
+    public List<Ticket> getTicketsByBookingId(Long bookingId) {
         return ticketRepository.findByBookingId(bookingId);
     }
     

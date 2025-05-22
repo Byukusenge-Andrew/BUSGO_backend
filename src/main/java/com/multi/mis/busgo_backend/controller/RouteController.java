@@ -1,5 +1,6 @@
 package com.multi.mis.busgo_backend.controller;
 
+import com.multi.mis.busgo_backend.dto.PopularRouteDTO;
 import com.multi.mis.busgo_backend.model.BusCompany;
 import com.multi.mis.busgo_backend.model.Route;
 import com.multi.mis.busgo_backend.repository.BusCompanyRepository;
@@ -162,5 +163,17 @@ public class RouteController {
         return routeService.getRouteByCode(code)
                 .map(route -> ResponseEntity.ok(route))
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * GET /api/routes/popular
+     * Retrieves the most popular routes based on booking count.
+     * @param limit The maximum number of popular routes to return (optional, default 5).
+     * @return A list of the most popular routes.
+     */
+    @GetMapping("/popular")
+    public ResponseEntity<List<PopularRouteDTO>> getPopularRoutes(@RequestParam(defaultValue = "5") int limit) {
+        List<PopularRouteDTO> popularRoutes = routeService.getPopularRoutes(limit);
+        return ResponseEntity.ok(popularRoutes);
     }
 }

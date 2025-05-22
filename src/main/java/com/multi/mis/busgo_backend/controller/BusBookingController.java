@@ -373,6 +373,7 @@ public class BusBookingController {
     @GetMapping("/CountBookingsByUser")
     public ResponseEntity<Integer> countBookingsByUser(@RequestParam Long userId) {
         int count = busBookingService.CountBusBookingsByUserId(userId);
-        return new ResponseEntity<>(count, HttpStatus.OK);
+//        return new ResponseEntity<>(count, HttpStatus.OK);
+        return ResponseEntity.ok(count);
     }
 }

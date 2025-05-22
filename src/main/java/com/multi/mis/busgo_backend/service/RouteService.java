@@ -1,5 +1,6 @@
 package com.multi.mis.busgo_backend.service;
 
+import com.multi.mis.busgo_backend.dto.PopularRouteDTO;
 import com.multi.mis.busgo_backend.model.BusCompany;
 import com.multi.mis.busgo_backend.model.Route;
 import com.multi.mis.busgo_backend.repository.BusCompanyRepository;
@@ -138,5 +139,9 @@ public class RouteService {
     public Optional<Route> getRouteByCode(String code) {
         List<Route> routes = routeRepository.findByRouteCode(code);
         return routes.isEmpty() ? Optional.empty() : Optional.of(routes.get(0));
+    }
+
+    public List<PopularRouteDTO> getPopularRoutes(int limit) {
+        return routeRepository.findPopularRoutes(limit);
     }
 }
