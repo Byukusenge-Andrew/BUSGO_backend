@@ -114,6 +114,13 @@ public class BusBooking {
         return this.schedule != null && this.schedule.getCompany() != null ? this.schedule.getCompany().getId() : null;
     }
 
+    public String getCompanyName() {
+        if (this.schedule != null && this.schedule.getCompany() != null) {
+            return this.schedule.getCompany().getCompanyName();
+        }
+        return null;
+    }
+
     public void setNumberOfSeats(Integer numberOfSeats) {
         this.numberOfSeats = numberOfSeats;
     }

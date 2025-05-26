@@ -8,17 +8,23 @@ import com.multi.mis.busgo_backend.repository.RouteRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.scheduling.annotation.Scheduled;
 
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class BusScheduleService {
 
     private static final Logger logger = LoggerFactory.getLogger(BusScheduleService.class);
+    
+    private boolean initialized = false;
 
     @Autowired
     private BusScheduleRepository busScheduleRepository;
@@ -31,6 +37,22 @@ public class BusScheduleService {
 
     @Autowired
     private BusLocationRepository busLocationRepository;
+
+    /**
+     * Initialize the service and update past schedules when the application context is fully loaded.
+     * This ensures transactions work properly during initialization.
+     */
+    @EventListener(ContextRefreshedEvent.class)
+    @Transactional
+    public void onApplicationEvent() {
+        // Prevent duplicate initialization if the event fires multiple times
+        if (!initialized) {
+            logger.info("Initializing BusScheduleService and updating past schedules on startup...");
+            int updatedCount = manuallyUpdatePastSchedulesStatus();
+            logger.info("Startup initialization complete. Updated {} schedules.", updatedCount);
+            initialized = true;
+        }
+    }
 
     public BusCompanyRepository getBusCompanyRepository() {
         return busCompanyRepository;
@@ -108,6 +130,18 @@ public class BusScheduleService {
         return busScheduleRepository.findAll();
     }
 
+    /**
+     * Gets all active schedules with departure time not in the past
+     * @return List of valid schedules
+     */
+    public List<BusSchedule> getAllActiveSchedules() {
+        List<BusSchedule> allSchedules = busScheduleRepository.findAll();
+        Date currentDate = new Date();
+        return allSchedules.stream()
+                .filter(schedule -> schedule.isActive() && schedule.getDepartureTime().after(currentDate))
+                .collect(Collectors.toList());
+    }
+
     public Optional<BusSchedule> getScheduleById(Long scheduleId) {
         return busScheduleRepository.findById(scheduleId);
     }
@@ -167,16 +201,90 @@ public class BusScheduleService {
     }
 
     public List<BusSchedule> searchBus(Long sourceId, Long destId, Date departureDate) {
-        return busScheduleRepository.findBySourceLocationLocationIdAndDestinationLocationLocationIdAndDepartureTime(
+        // Get the current date and time
+        Date currentDate = new Date();
+        
+        // Get schedules from repository
+        List<BusSchedule> schedules = busScheduleRepository.findBySourceLocationLocationIdAndDestinationLocationLocationIdAndDepartureTime(
                 sourceId, destId, departureDate);
+        
+        // Filter out schedules with departure time in the past
+        return schedules.stream()
+                .filter(schedule -> schedule.isActive() && schedule.getDepartureTime().after(currentDate))
+                .collect(Collectors.toList());
     }
 
     public List<BusSchedule> searchBusByCity(String sourceCity, String destCity, Date departureDate) {
-        return busScheduleRepository.findBySourceLocationCityAndDestinationLocationCityAndDepartureTime(
+        // Get the current date and time
+        Date currentDate = new Date();
+        
+        // Get schedules from repository
+        List<BusSchedule> schedules = busScheduleRepository.findBySourceLocationCityAndDestinationLocationCityAndDepartureTime(
                 sourceCity, destCity, departureDate);
+        
+        // Filter out schedules with departure time in the past
+        return schedules.stream()
+                .filter(schedule -> schedule.isActive() && schedule.getDepartureTime().after(currentDate))
+                .collect(Collectors.toList());
     }
 
     public List<BusSchedule> getBusScheduleByCompany(Long companyId) {
         return busScheduleRepository.findByCompanyId(companyId);
+    }
+
+    /**
+     * Automatically updates the active status of schedules whose departure time has passed.
+     * This task runs daily at a fixed time (e.g., 3:00 AM).
+     */
+    @Scheduled(cron = "0 0 3 * * ?") // Runs every day at 3:00 AM
+    @Transactional
+    public void updatePastSchedulesStatus() {
+        logger.info("Starting scheduled task to update past schedules status.");
+        Date now = new Date();
+        
+        // Find all active schedules with departure time in the past
+        List<BusSchedule> pastSchedules = busScheduleRepository.findByActiveAndDepartureTimeBefore(true, now);
+
+        if (pastSchedules.isEmpty()) {
+            logger.info("No past active schedules found.");
+            return;
+        }
+
+        List<Long> scheduleIdsToUpdate = pastSchedules.stream()
+                .map(BusSchedule::getScheduleId)
+                .collect(Collectors.toList());
+
+        // Set active to false for past schedules
+        int updatedCount = busScheduleRepository.updateActiveStatusByIdIn(scheduleIdsToUpdate, false);
+
+        logger.info("Updated {} past schedules to inactive (active=false).", updatedCount);
+    }
+    
+    /**
+     * Manual method to update status of past schedules.
+     * Can be called from a controller or other service methods.
+     */
+    @Transactional
+    public int manuallyUpdatePastSchedulesStatus() {
+        logger.info("Manually updating past schedules status.");
+        Date now = new Date();
+        
+        // Find all active schedules with departure time in the past
+        List<BusSchedule> pastSchedules = busScheduleRepository.findByActiveAndDepartureTimeBefore(true, now);
+
+        if (pastSchedules.isEmpty()) {
+            logger.info("No past active schedules found.");
+            return 0;
+        }
+
+        List<Long> scheduleIdsToUpdate = pastSchedules.stream()
+                .map(BusSchedule::getScheduleId)
+                .collect(Collectors.toList());
+
+        // Set active to false for past schedules
+        int updatedCount = busScheduleRepository.updateActiveStatusByIdIn(scheduleIdsToUpdate, false);
+
+        logger.info("Manually updated {} past schedules to inactive (active=false).", updatedCount);
+        return updatedCount;
     }
 }

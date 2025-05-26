@@ -2,6 +2,7 @@ package com.multi.mis.busgo_backend.repository;
 
 import com.multi.mis.busgo_backend.model.BusSchedule;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -51,4 +52,10 @@ public interface BusScheduleRepository extends JpaRepository<BusSchedule, Long> 
 
     List<BusSchedule> findBySourceLocationCityAndDestinationLocationCityAndDepartureTime(
             String sourceCity, String destCity, Date departureDate);
+
+    List<BusSchedule> findByActiveAndDepartureTimeBefore(boolean active, Date departureTime);
+
+    @Modifying
+    @Query("UPDATE BusSchedule s SET s.active = :active WHERE s.scheduleId IN :ids")
+    int updateActiveStatusByIdIn(@Param("ids") List<Long> ids, @Param("active") boolean active);
 } 

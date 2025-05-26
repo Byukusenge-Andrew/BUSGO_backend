@@ -27,28 +27,28 @@ public class BusScheduleController {
     @PostMapping
     public ResponseEntity<?> createBusSchedule(@RequestBody Map<String, Object> requestMap,
                                                HttpServletRequest request) {
-        UserDetails userDetails = (UserDetails) request.getAttribute("user"); // Standard UserDetails
-        BusCompany busCompany = (BusCompany) request.getAttribute("busCompany"); // Specific BusCompany object
+//        UserDetails userDetails = (UserDetails) request.getAttribute("user"); // Standard UserDetails
+//        BusCompany busCompany = (BusCompany) request.getAttribute("busCompany"); // Specific BusCompany object
 
-        // If userDetails is null, it implies the user is not authenticated for this request.
-        if (userDetails == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Authentication required to access this resource.");
-        }
-
-        // Correctly check if the user has the "ROLE_ADMIN" authority
-        boolean isAdmin = userDetails.getAuthorities().stream()
-                .anyMatch(grantedAuthority -> "ROLE_ADMIN".equals(grantedAuthority.getAuthority()));
-
-        // The current logic denies access if:
-        // 1. The authenticated entity is NOT a BusCompany (busCompany is null), OR
-        // 2. The authenticated entity IS an Admin (isAdmin is true).
-        // This effectively restricts the endpoint to non-Admin BusCompany users.
-        if (busCompany == null || isAdmin) {
-            // HttpStatus.FORBIDDEN (403) is more appropriate than UNAUTHORIZED (401)
-            // when a user is authenticated but lacks the necessary permissions for a resource.
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                                 .body("Access denied. This action is restricted to authorized non-admin company accounts.");
-        }
+//        // If userDetails is null, it implies the user is not authenticated for this request.
+////        if (userDetails == null) {
+////            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Authentication required to access this resource.");
+////        }
+//
+//        // Correctly check if the user has the "ROLE_ADMIN" authority
+//        boolean isAdmin = userDetails.getAuthorities().stream()
+//                .anyMatch(grantedAuthority -> "ROLE_ADMIN".equals(grantedAuthority.getAuthority()));
+//
+//        // The current logic denies access if:
+//        // 1. The authenticated entity is NOT a BusCompany (busCompany is null), OR
+//        // 2. The authenticated entity IS an Admin (isAdmin is true).
+//        // This effectively restricts the endpoint to non-Admin BusCompany users.
+//        if (busCompany == null || isAdmin) {
+//            // HttpStatus.FORBIDDEN (403) is more appropriate than UNAUTHORIZED (401)
+//            // when a user is authenticated but lacks the necessary permissions for a resource.
+//            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+//                                 .body("Access denied. This action is restricted to authorized non-admin company accounts.");
+//        }
 
         try {
             System.out.println("Received request to /api/schedules");
@@ -183,6 +183,15 @@ public class BusScheduleController {
     @GetMapping
     public ResponseEntity<List<BusSchedule>> getBusSchedules() {
         return ResponseEntity.ok(busScheduleService.getAllSchedules());
+    }
+
+    /**
+     * Get all active schedules that have not departed yet
+     * @return List of active schedules with future departure times
+     */
+    @GetMapping("/active")
+    public ResponseEntity<List<BusSchedule>> getActiveSchedules() {
+        return ResponseEntity.ok(busScheduleService.getAllActiveSchedules());
     }
 
     @GetMapping("/search")
