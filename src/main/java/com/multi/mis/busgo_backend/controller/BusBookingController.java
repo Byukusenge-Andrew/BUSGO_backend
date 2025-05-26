@@ -1,4 +1,3 @@
-
 package com.multi.mis.busgo_backend.controller;
 
 import com.multi.mis.busgo_backend.model.BusBooking;
@@ -8,6 +7,10 @@ import com.multi.mis.busgo_backend.service.BusBookingService;
 import com.multi.mis.busgo_backend.service.BusScheduleService;
 import com.multi.mis.busgo_backend.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -375,5 +378,37 @@ public class BusBookingController {
         int count = busBookingService.CountBusBookingsByUserId(userId);
 //        return new ResponseEntity<>(count, HttpStatus.OK);
         return ResponseEntity.ok(count);
+    }
+
+    /**
+     * Get bookings by user ID with pagination
+     * @param userId The user ID
+     * @param page Page number (0-based)
+     * @param size Number of items per page
+     * @return Paginated list of bookings for the user
+     */
+    @GetMapping("/GetBookingsByUserPaginated")
+    public ResponseEntity<Page<BusBooking>> getBookingsByUserPaginated(
+            @RequestParam Long userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("bookingDate").descending());
+        Page<BusBooking> bookings = busBookingService.getBookingsByUserPaginated(userId, pageable);
+        return new ResponseEntity<>(bookings, HttpStatus.OK);
+    }
+
+    /**
+     * Get all bookings with pagination
+     * @param page Page number (0-based)
+     * @param size Number of items per page
+     * @return Paginated list of all bookings
+     */
+    @GetMapping("/GetAllBookingsPaginated")
+    public ResponseEntity<Page<BusBooking>> getAllBookingsPaginated(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("bookingDate").descending());
+        Page<BusBooking> bookings = busBookingService.getAllBookingsPaginated(pageable);
+        return new ResponseEntity<>(bookings, HttpStatus.OK);
     }
 }

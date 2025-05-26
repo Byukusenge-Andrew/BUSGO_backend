@@ -64,7 +64,7 @@ public class PasswordResetService {
 
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true);
-        helper.setFrom("noreply@test-zkq340ee7z6gd796.mlsender.net"); // Verified sender email
+        helper.setFrom("andrebyukusenge9@gmail.com"); // Match spring.mail.username
         helper.setTo(email);
         helper.setSubject(subject);
         helper.setText(content, true);

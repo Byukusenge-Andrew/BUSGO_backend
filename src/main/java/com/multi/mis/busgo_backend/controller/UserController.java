@@ -41,34 +41,39 @@ public class UserController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<?> getMe() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    public ResponseEntity<?> getMe(HttpServletRequest request) {
 
-        if (authentication == null || !authentication.isAuthenticated() || authentication.getPrincipal().equals("anonymousUser")) {
-            // Return unauthorized if no user is authenticated or if the principal is the anonymous user
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authenticated");
-        }
+        UserDetails userdetails = (UserDetails) request.getAttribute("user");
+        User user = userService.findByUsername(userdetails.getUsername());
 
-        Object principal = authentication.getPrincipal();
-
-        if (principal instanceof UserDetails) {
-            // If the principal is UserDetails (which our User class implements)
-            // We might need to fetch the full User entity if UserDetails doesn't contain all fields
-            String username = ((UserDetails) principal).getUsername();
-            Optional<User> userOpt = Optional.ofNullable(userService.findByUsername(username));
-            return userOpt.<ResponseEntity<?>>map(ResponseEntity::ok)
-                    .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body("Authenticated user details not found"));
-
-        } else if (principal instanceof String) {
-            // If the principal is just the username string (less common with UserDetails setup)
-            String username = (String) principal;
-            Optional<User> userOpt = Optional.ofNullable(userService.findByUsername(username));
-            return userOpt.<ResponseEntity<?>>map(ResponseEntity::ok)
-                    .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body("User details not found for username: " + username));
-        } else {
-            // Handle unexpected principal type
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unexpected principal type: " + principal.getClass().getName());
-        }
+        return ResponseEntity.ok(user);
+//        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+//
+//        if (authentication == null || !authentication.isAuthenticated() || authentication.getPrincipal().equals("anonymousUser")) {
+//            // Return unauthorized if no user is authenticated or if the principal is the anonymous user
+//            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authenticated");
+//        }
+//
+//        Object principal = authentication.getPrincipal();
+//
+//        if (principal instanceof UserDetails) {
+//            // If the principal is UserDetails (which our User class implements)
+//            // We might need to fetch the full User entity if UserDetails doesn't contain all fields
+//            String username = ((UserDetails) principal).getUsername();
+//            Optional<User> userOpt = Optional.ofNullable(userService.findByUsername(username));
+//            return userOpt.<ResponseEntity<?>>map(ResponseEntity::ok)
+//                    .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body("Authenticated user details not found"));
+//
+//        } else if (principal instanceof String) {
+//            // If the principal is just the username string (less common with UserDetails setup)
+//            String username = (String) principal;
+//            Optional<User> userOpt = Optional.ofNullable(userService.findByUsername(username));
+//            return userOpt.<ResponseEntity<?>>map(ResponseEntity::ok)
+//                    .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body("User details not found for username: " + username));
+//        } else {
+//            // Handle unexpected principal type
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unexpected principal type: " + principal.getClass().getName());
+//        }
     }
 
 

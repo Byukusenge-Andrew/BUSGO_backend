@@ -58,11 +58,10 @@ public class SecurityConfig {
     @Bean
     public JavaMailSender getJavaMailSender() {
         JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
-        // Use properties from application.properties instead of hardcoding
-        mailSender.setHost("smtp.mailersend.net");
+        mailSender.setHost("smtp.gmail.com");
         mailSender.setPort(587);
-        mailSender.setUsername("MS_nLfXF8@test-zkq340ee7z6gd796.mlsender.net");
-        mailSender.setPassword("mssp.7r8OBnw.o65qngkkn2wgwr12.JdHwVJI");
+        mailSender.setUsername("andrebyukusenge9@gmail.com");
+        mailSender.setPassword("mfec koel avym tkdl"); // Replace with your Gmail App Password
 
         Properties props = mailSender.getJavaMailProperties();
         props.put("mail.smtp.auth", "true");
@@ -71,7 +70,6 @@ public class SecurityConfig {
 
         return mailSender;
     }
-
 
     @Bean
     public PasswordEncoder passwordEncoder() {

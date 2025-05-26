@@ -5,6 +5,8 @@ import com.multi.mis.busgo_backend.model.BusSchedule;
 import com.multi.mis.busgo_backend.repository.BusBookingRepository;
 import com.multi.mis.busgo_backend.repository.BusScheduleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +34,10 @@ public class BusBookingService {
     
     public List<BusBooking> getAllBookings() {
         return busBookingRepository.findAll();
+    }
+    
+    public Page<BusBooking> getAllBookingsPaginated(Pageable pageable) {
+        return busBookingRepository.findAll(pageable);
     }
 
     @Transactional
@@ -73,6 +79,10 @@ public class BusBookingService {
         return busBookingRepository.findAll().stream()
             .filter(booking -> booking.getUser().getId().equals(userId))
             .collect(Collectors.toList());
+    }
+    
+    public Page<BusBooking> getBookingsByUserPaginated(Long userId, Pageable pageable) {
+        return busBookingRepository.findByUserId(userId, pageable);
     }
     
     public List<BusBooking> getBookingsBySchedule(Long scheduleId) {

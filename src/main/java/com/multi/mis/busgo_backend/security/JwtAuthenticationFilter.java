@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
+import com.multi.mis.busgo_backend.model.BusCompany;
 import com.multi.mis.busgo_backend.service.BusCompanyService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -56,7 +57,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String path = request.getServletPath();
         boolean shouldSkip = PUBLIC_ENDPOINTS.contains(path) || request.getMethod().equals("OPTIONS");
         if (shouldSkip) {
-            logger.debug("Skipping JWT authentication for: " + path + " Method: " + request.getMethod());
+            logger.debug("Skipping JWT authentication for: {} Method: {}", path, request.getMethod());
         }
         return shouldSkip;
     }
@@ -65,7 +66,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
         String path = request.getServletPath();
-        logger.debug("Processing request: " + path);
+        logger.debug("Processing request: {}", path);
 
         final String authorizationHeader = request.getHeader("Authorization");
 
@@ -78,12 +79,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             try {
                 email = jwtUtil.extractUsername(jwt);
                 role = jwtUtil.extractRole(jwt);
-                logger.debug("Email: " + email + ", Role: " + role);
+                logger.debug("Extracted from token - Email: {}, Role: {}", email, role);
             } catch (Exception e) {
-                logger.error("Error extracting information from token: " + e.getMessage());
+                logger.error("Error extracting information from token: {}", e.getMessage());
             }
         } else {
-            logger.debug("No Authorization header or invalid format for path: " + path);
+            logger.debug("No Authorization header or invalid format for path: {}", path);
         }
 
         if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
@@ -92,10 +93,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 // Choose the appropriate service based on the role in the token
                 if (role != null && role.equals("COMPANY")) {
-                    logger.debug("Loading company details for: " + email);
+                    logger.debug("Loading company UserDetails for: {}", email);
                     userDetails = busCompanyService.loadUserByUsername(email);
                 } else {
-                    logger.debug("Loading user details for: " + email);
+                    logger.debug("Loading user UserDetails for: {}", email);
                     userDetails = userDetailsService.loadUserByUsername(email);
                 }
 
@@ -104,12 +105,33 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             userDetails, null, userDetails.getAuthorities());
                     authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authenticationToken);
-                    logger.debug("Authenticated entity: " + email + " with role: " + role + " for path: " + path);
+                    
+                    // Add the UserDetails object to the request attributes
+                    request.setAttribute("user", userDetails);
+                    logger.debug("Authenticated (UserDetails): {} with role: {}. UserDetails object added to request attributes as 'user'.", userDetails.getUsername(), role);
+
+                    // If it's a company, also add the BusCompany object
+                    if (role != null && role.equals("COMPANY")) {
+                        BusCompany company = busCompanyService.findByContactEmail(email); // email is the username here
+                        if (company != null) {
+                            request.setAttribute("busCompany", company);
+                            logger.debug("Additionally, BusCompany object for {} (ID: {}) added to request attributes as 'busCompany'.", company.getCompanyName(), company.getCompanyId());
+                        } else {
+                            // This case should ideally not happen if loadUserByUsername succeeded for a company
+                            logger.warn("Could not retrieve BusCompany object for email {} even though UserDetails were loaded for COMPANY role. 'busCompany' attribute not set.", email);
+                        }
+                    }
+                    logger.info("Authentication successful for entity: {} with role: {} for path: {}", userDetails.getUsername(), role, path);
                 } else {
-                    logger.warn("Invalid JWT token for: " + email);
+                    logger.warn("Invalid JWT token for email: {}", email);
                 }
             } catch (Exception e) {
-                logger.error("Error authenticating: " + e.getMessage());
+                // Log the error with more context, including the email if available
+                String errorMsg = "Error during authentication process";
+                if (email != null) {
+                    errorMsg += " for email " + email;
+                }
+                logger.error(errorMsg + ": {}", e.getMessage(), e);
             }
         }
 
