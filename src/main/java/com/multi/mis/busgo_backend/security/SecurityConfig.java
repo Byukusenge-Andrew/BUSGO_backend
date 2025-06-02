@@ -13,11 +13,13 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 
 import java.util.Properties;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
     @Bean
@@ -35,11 +37,14 @@ public class SecurityConfig {
                                   "/api/schedules/search",
                                 "/api/test/public",
                                 "/api/test",
-                                "/actuator/*",
+                                "/actuator/**",
                                 "/api/schedules",
                                 "/api/companies/login",
                                 "/error" // Add /error to permitAll
                         ).permitAll()
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/companies/**", "/api/buses/**", "/api/routes/**", "/api/bus-locations/**", "/api/schedules/**").hasAnyRole("ADMIN", "COMPANY")
+                        .requestMatchers("/api/users/**", "/api/bookings/**", "/api/tickets/**", "/api/payments/**").hasAnyRole("USER", "ADMIN", "COMPANY")
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session

@@ -58,12 +58,18 @@ public class JwtUtil {
         return keyBytes;
     }
 
-    private Boolean isTokenExpired(String token) {
+    public Boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());
     }
 
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
+        // Add role claim for regular users
+        if (userDetails.getAuthorities() != null && !userDetails.getAuthorities().isEmpty()) {
+            // Assuming a single role, or taking the first one if multiple
+            String role = userDetails.getAuthorities().iterator().next().getAuthority();
+            claims.put("role", role.replace("ROLE_", "")); // Remove "ROLE_" prefix if present
+        }
         return createToken(claims, userDetails.getUsername());
     }
 
