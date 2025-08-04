@@ -136,4 +136,36 @@ public class UserService implements UserDetailsService {
         Optional<User> user = userRepository.findById(id);
         return user.orElse(null);
     }
+
+    /**
+     * Deactivate a user (soft delete)
+     * @param id The ID of the user to deactivate
+     */
+    public void deactivateUser(Long id) {
+        Optional<User> userOpt = userRepository.findById(id);
+        if (!userOpt.isPresent()) {
+            throw new RuntimeException("User not found with ID: " + id);
+        }
+
+        User user = userOpt.get();
+        user.setActive(false);
+        userRepository.save(user);
+        logger.info("User deactivated: " + user.getUsername());
+    }
+
+    /**
+     * Activate a user
+     * @param id The ID of the user to activate
+     */
+    public void activateUser(Long id) {
+        Optional<User> userOpt = userRepository.findById(id);
+        if (!userOpt.isPresent()) {
+            throw new RuntimeException("User not found with ID: " + id);
+        }
+
+        User user = userOpt.get();
+        user.setActive(true);
+        userRepository.save(user);
+        logger.info("User activated: " + user.getUsername());
+    }
 }

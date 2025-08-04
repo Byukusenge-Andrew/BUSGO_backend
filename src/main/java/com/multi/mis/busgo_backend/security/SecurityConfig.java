@@ -43,7 +43,18 @@ public class SecurityConfig {
                                 "/error" // Add /error to permitAll
                         ).permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/companies/**", "/api/buses/**", "/api/routes/**", "/api/bus-locations/**", "/api/schedules/**").hasAnyRole("ADMIN", "COMPANY")
+                        // Allow users to read schedules and routes for booking, but only ADMIN/COMPANY can modify
+                        .requestMatchers(HttpMethod.GET, "/api/schedules/**").hasAnyRole("USER", "ADMIN", "COMPANY")
+                        .requestMatchers(HttpMethod.POST, "/api/schedules/**").hasAnyRole("ADMIN", "COMPANY")
+                        .requestMatchers(HttpMethod.PUT, "/api/schedules/**").hasAnyRole("ADMIN", "COMPANY")
+                        .requestMatchers(HttpMethod.DELETE, "/api/schedules/**").hasAnyRole("ADMIN", "COMPANY")
+                        // Allow users to read routes for booking
+                        .requestMatchers(HttpMethod.GET, "/api/routes/**").hasAnyRole("USER", "ADMIN", "COMPANY")
+                        .requestMatchers(HttpMethod.POST, "/api/routes/**").hasAnyRole("ADMIN", "COMPANY")
+                        .requestMatchers(HttpMethod.PUT, "/api/routes/**").hasAnyRole("ADMIN", "COMPANY")
+                        .requestMatchers(HttpMethod.DELETE, "/api/routes/**").hasAnyRole("ADMIN", "COMPANY")
+                        // Other company management endpoints
+                        .requestMatchers("/api/companies/**", "/api/buses/**", "/api/bus-locations/**").hasAnyRole("ADMIN", "COMPANY")
                         .requestMatchers("/api/users/**", "/api/bookings/**", "/api/tickets/**", "/api/payments/**").hasAnyRole("USER", "ADMIN", "COMPANY")
                         .anyRequest().authenticated()
                 )

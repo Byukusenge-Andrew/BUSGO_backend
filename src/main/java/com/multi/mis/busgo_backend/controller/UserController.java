@@ -40,6 +40,30 @@ public class UserController {
         return ResponseEntity.ok(userService.getAllUsers());
     }
 
+    /**
+     * GET /api/users/{id}
+     * Get user by ID
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getUserById(@PathVariable Long id) {
+        try {
+            Optional<User> userOpt = userService.getUserById(id);
+            if (userOpt.isPresent()) {
+                User user = userOpt.get();
+                // Remove sensitive information before returning
+                user.setPassword(null);
+                user.setSecretKey(null);
+                return ResponseEntity.ok(user);
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("User with ID " + id + " not found");
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error retrieving user: " + e.getMessage());
+        }
+    }
+
     @GetMapping("/me")
     public ResponseEntity<?> getMe(HttpServletRequest request) {
 
@@ -138,8 +162,74 @@ public class UserController {
         int totalBookings = bookings.size();
         int rewardsPoints = totalBookings * 10; // Example calculation: 10 points per booking
         return rewardsPoints;
-         // Default value for demonstration
     }
+
+    /**
+     * PUT /api/users/{id}
+     * Update user information
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody User userUpdate, HttpServletRequest request) {
+        try {
+            // Get current authenticated user
+            UserDetails userDetails = (UserDetails) request.getAttribute("user");
+            User currentUser = userService.findByUsername(userDetails.getUsername());
+            
+            // Check if user can update this profile (themselves or admin)
+            if (!currentUser.getId().equals(id) && !currentUser.getRole().equals("ADMIN")) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body("You can only update your own profile");
+            }
+
+            Optional<User> existingUserOpt = userService.getUserById(id);
+            if (!existingUserOpt.isPresent()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("User with ID " + id + " not found");
+            }
+
+            User updatedUser = userService.updateUser(id, userUpdate);
+            // Remove sensitive information
+            updatedUser.setPassword(null);
+            updatedUser.setSecretKey(null);
+            
+            return ResponseEntity.ok(updatedUser);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error updating user: " + e.getMessage());
+        }
+    }
+
+    /**
+     * DELETE /api/users/{id}
+     * Deactivate user (soft delete)
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deactivateUser(@PathVariable Long id, HttpServletRequest request) {
+        try {
+            // Get current authenticated user
+            UserDetails userDetails = (UserDetails) request.getAttribute("user");
+            User currentUser = userService.findByUsername(userDetails.getUsername());
+            
+            // Only admins can deactivate users
+            if (!currentUser.getRole().equals("ADMIN")) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body("Only administrators can deactivate users");
+            }
+
+            Optional<User> userOpt = userService.getUserById(id);
+            if (!userOpt.isPresent()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("User with ID " + id + " not found");
+            }
+
+            userService.deactivateUser(id);
+            return ResponseEntity.ok("User deactivated successfully");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error deactivating user: " + e.getMessage());
+        }
+    }
+
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> credentials) {
         String username = credentials.get("username");
@@ -172,24 +262,5 @@ public class UserController {
     @PostMapping
     public ResponseEntity<User> createUser(@RequestBody User user) {
         return ResponseEntity.ok(userService.createUser(user));
-    }
-    
-    @PutMapping("/{userId}")
-    public ResponseEntity<?> updateUser(@PathVariable Long userId, @RequestBody User user) {
-        User updatedUser = userService.updateUser(userId, user);
-        return updatedUser != null 
-            ? ResponseEntity.ok(updatedUser)
-            : ResponseEntity.notFound().build();
-    }
-    
-    @DeleteMapping("/{userId}")
-    public ResponseEntity<?> deleteUser(@PathVariable Long userId) {
-        boolean deleted = userService.deleteUser(userId);
-        
-        if (deleted) {
-            return ResponseEntity.ok("User deleted successfully");
-        } else {
-            return ResponseEntity.notFound().build();
-        }
     }
 }

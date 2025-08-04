@@ -31,23 +31,33 @@ public class PaymentService {
     
     @Transactional
     public Payment createPayment(Payment payment) {
-        payment.setPaymentDate(new Date());
-        // Explicitly set the status to COMPLETED before saving
-        payment.setStatus("COMPLETED");
+        // Set payment date if not already set
+        if (payment.getPaymentDate() == null) {
+            payment.setPaymentDate(new Date());
+        }
+        
+        // Set status to PENDING if not provided
+        if (payment.getStatus() == null || payment.getStatus().isEmpty()) {
+            payment.setStatus("PENDING");
+        }
+        
+        // Generate transaction ID if not provided
+        if (payment.getTransactionId() == null || payment.getTransactionId().isEmpty()) {
+            payment.setTransactionId("TXN-" + System.currentTimeMillis());
+        }
+        
         Payment savedPayment = paymentRepository.save(payment);
         
-        // Update the corresponding booking status AND paymentStatus
-        if (savedPayment.getBooking() != null) {
+        // Update the corresponding booking status only if payment is completed
+        if (savedPayment.getBooking() != null && "COMPLETED".equals(savedPayment.getStatus())) {
             Long bookingId = savedPayment.getBooking().getBookingId();
             try {
-                // Call the new method in BusBookingService
                 busBookingService.confirmBookingAfterPayment(bookingId);
             } catch (Exception e) {
-                // Handle potential exceptions during booking status update
-                System.err.println("Failed to update booking status/paymentStatus for booking ID: " + bookingId + " after payment ID: " + savedPayment.getPaymentId());
-                throw new RuntimeException("Failed to update booking status and paymentStatus after payment.", e);
+                System.err.println("Failed to update booking status for booking ID: " + bookingId + " after payment ID: " + savedPayment.getPaymentId());
+                throw new RuntimeException("Failed to update booking status after payment.", e);
             }
-        } else {
+        } else if (savedPayment.getBooking() == null) {
             // Handle case where payment is somehow created without a booking link
             System.err.println("Payment created (ID: " + savedPayment.getPaymentId() + ") but has no associated booking.");
         }
@@ -140,5 +150,58 @@ public class PaymentService {
         // Add more stats as needed using other repository methods
 
         return stats;
+    }
+    
+    /**
+     * Process payment and update payment status
+     */
+    @Transactional
+    public Payment processPayment(Long paymentId, String paymentMethod, String transactionId) {
+        Optional<Payment> paymentOpt = paymentRepository.findById(paymentId);
+        if (paymentOpt.isEmpty()) {
+            throw new RuntimeException("Payment not found with ID: " + paymentId);
+        }
+        
+        Payment payment = paymentOpt.get();
+        payment.setPaymentMethod(paymentMethod);
+        payment.setTransactionId(transactionId);
+        payment.setStatus("COMPLETED");
+        payment.setPaymentDate(new Date());
+        
+        Payment savedPayment = paymentRepository.save(payment);
+        
+        // Update booking status after successful payment
+        if (savedPayment.getBooking() != null) {
+            Long bookingId = savedPayment.getBooking().getBookingId();
+            try {
+                busBookingService.confirmBookingAfterPayment(bookingId);
+            } catch (Exception e) {
+                System.err.println("Failed to update booking status for booking ID: " + bookingId);
+                throw new RuntimeException("Failed to update booking status after payment.", e);
+            }
+        }
+        
+        return savedPayment;
+    }
+    
+    /**
+     * Refund payment
+     */
+    @Transactional
+    public Payment refundPayment(Long paymentId, String reason) {
+        Optional<Payment> paymentOpt = paymentRepository.findById(paymentId);
+        if (paymentOpt.isEmpty()) {
+            throw new RuntimeException("Payment not found with ID: " + paymentId);
+        }
+        
+        Payment payment = paymentOpt.get();
+        if (!"COMPLETED".equals(payment.getStatus())) {
+            throw new RuntimeException("Only completed payments can be refunded");
+        }
+        
+        payment.setStatus("REFUNDED");
+        payment.setPaymentDetails(payment.getPaymentDetails() + " | Refund Reason: " + reason);
+        
+        return paymentRepository.save(payment);
     }
 } 

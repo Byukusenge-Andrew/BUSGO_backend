@@ -95,4 +95,37 @@ public class PaymentController {
         Map<String, Object> stats = paymentService.getPaymentStatsByCompanyId(companyId);
         return ResponseEntity.ok(stats);
     }
+    
+    /**
+     * POST /api/payments/process
+     * Process a payment
+     */
+    @PostMapping("/payments/process")
+    public ResponseEntity<?> processPayment(@RequestBody Map<String, Object> paymentRequest) {
+        try {
+            Long paymentId = Long.valueOf(paymentRequest.get("paymentId").toString());
+            String paymentMethod = (String) paymentRequest.get("paymentMethod");
+            String transactionId = (String) paymentRequest.get("transactionId");
+            
+            Payment processedPayment = paymentService.processPayment(paymentId, paymentMethod, transactionId);
+            return ResponseEntity.ok(processedPayment);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error processing payment: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * POST /api/payments/{paymentId}/refund
+     * Refund a payment
+     */
+    @PostMapping("/payments/{paymentId}/refund")
+    public ResponseEntity<?> refundPayment(@PathVariable Long paymentId, @RequestBody Map<String, String> refundRequest) {
+        try {
+            String reason = refundRequest.getOrDefault("reason", "Refund requested");
+            Payment refundedPayment = paymentService.refundPayment(paymentId, reason);
+            return ResponseEntity.ok(refundedPayment);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error refunding payment: " + e.getMessage());
+        }
+    }
 } 

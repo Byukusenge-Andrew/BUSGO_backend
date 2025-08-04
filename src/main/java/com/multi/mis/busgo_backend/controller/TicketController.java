@@ -21,7 +21,7 @@ public class TicketController {
 
     // Get all tickets with optional filters
     @GetMapping
-    public ResponseEntity<List<Ticket>> getTickets(
+    public ResponseEntity<?> getTickets(
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String routeId,
             @RequestParam(required = false) Date date,
@@ -30,12 +30,18 @@ public class TicketController {
             @RequestParam(required = false, defaultValue = "0") Integer page,
             @RequestParam(required = false, defaultValue = "10") Integer size) {
         
-        return ResponseEntity.ok(ticketService.getFilteredTickets(status, routeId, date, searchTerm, companyId, page, size));
+        try {
+            List<Ticket> tickets = ticketService.getFilteredTickets(status, routeId, date, searchTerm, companyId, page, size);
+            return ResponseEntity.ok(tickets);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error retrieving tickets: " + e.getMessage());
+        }
     }
 
     // Get company tickets
     @GetMapping("/company/{companyId}")
-    public ResponseEntity<List<Ticket>> getCompanyTickets(
+    public ResponseEntity<?> getCompanyTickets(
             @PathVariable String companyId,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String routeId,
@@ -44,7 +50,16 @@ public class TicketController {
             @RequestParam(required = false, defaultValue = "0") Integer page,
             @RequestParam(required = false, defaultValue = "10") Integer size) {
         
-        return ResponseEntity.ok(ticketService.getFilteredTickets(status, routeId, date, searchTerm, companyId, page, size));
+        try {
+            if (companyId == null || companyId.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("Company ID is required");
+            }
+            List<Ticket> tickets = ticketService.getFilteredTickets(status, routeId, date, searchTerm, companyId, page, size);
+            return ResponseEntity.ok(tickets);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error retrieving company tickets: " + e.getMessage());
+        }
     }
 
     // Get user tickets
